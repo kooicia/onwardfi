@@ -223,7 +223,7 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
         {Object.entries(categories).map(([category, categoryAccounts]) => (
           <div key={category} className="mb-6">
             <h4 className="text-md font-medium text-gray-700 mb-3">{category}</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {categoryAccounts.map(renderAccountCard)}
             </div>
           </div>
@@ -233,9 +233,9 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
   };
 
   return (
-    <div className="bg-white rounded shadow p-6 mt-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h2 className="text-xl font-bold">Daily Net Worth Entry</h2>
+    <div className="bg-white rounded shadow p-4 sm:p-6 mt-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
+        <h2 className="text-lg sm:text-xl font-bold">Daily Net Worth Entry</h2>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <div className="flex items-center justify-center sm:justify-start gap-1 sm:gap-2">
             <button
@@ -326,8 +326,8 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
           {renderAccountSection('asset', 'Assets')}
           {renderAccountSection('liability', 'Liabilities')}
 
-          <div className="border-t pt-6 mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="border-t pt-4 sm:pt-6 mt-4 sm:mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="text-sm text-gray-600">Total Assets</div>
                 <div className="text-2xl font-bold text-green-700">

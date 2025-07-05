@@ -392,9 +392,9 @@ function App() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
-          <h1 className="text-2xl font-bold text-center mb-6 text-blue-700">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white p-4 sm:p-8 rounded-lg shadow-md max-w-md w-full">
+          <h1 className="text-xl sm:text-2xl font-bold text-center mb-6 text-blue-700">
             FIRE Net Worth Tracker
           </h1>
           <Auth
@@ -413,8 +413,8 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow p-4">
-        <div className="flex justify-between items-center mb-2">
-          <div className="font-bold text-2xl text-blue-700">FIRE Net Worth Tracker</div>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
+          <div className="font-bold text-xl sm:text-2xl text-blue-700">FIRE Net Worth Tracker</div>
           <div className="flex items-center gap-4">
             <Auth
               onLogin={handleLogin}
@@ -427,9 +427,9 @@ function App() {
           </div>
         </div>
       </header>
-      <nav className="flex gap-4 bg-blue-50 px-4 py-2">
+      <nav className="flex flex-wrap gap-2 bg-blue-50 px-4 py-2 overflow-x-auto">
         <button 
-          className={`px-3 py-1 rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md ${
+          className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
             page === "history" 
               ? "bg-blue-600 text-white shadow-md" 
               : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
@@ -439,7 +439,7 @@ function App() {
           Dashboard
         </button>
         <button 
-          className={`px-3 py-1 rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md ${
+          className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
             page === "entry" 
               ? "bg-blue-600 text-white shadow-md" 
               : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
@@ -449,7 +449,7 @@ function App() {
           Daily Entry
         </button>
         <button 
-          className={`px-3 py-1 rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md ${
+          className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
             page === "accounts" 
               ? "bg-blue-600 text-white shadow-md" 
               : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
@@ -459,7 +459,7 @@ function App() {
           Accounts
         </button>
         <button 
-          className={`px-3 py-1 rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md ${
+          className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
             page === "data" 
               ? "bg-blue-600 text-white shadow-md" 
               : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
@@ -469,7 +469,7 @@ function App() {
           Data Management
         </button>
         <button 
-          className={`px-3 py-1 rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md ${
+          className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
             page === "importexport" 
               ? "bg-blue-600 text-white shadow-md" 
               : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
@@ -479,7 +479,7 @@ function App() {
           Import/Export
         </button>
         <button 
-          className={`px-3 py-1 rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md ${
+          className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
             page === "settings" 
               ? "bg-blue-600 text-white shadow-md" 
               : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
@@ -489,7 +489,7 @@ function App() {
           Settings
         </button>
         <button 
-          className={`px-3 py-1 rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md ${
+          className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
             page === "firecalculator" 
               ? "bg-blue-600 text-white shadow-md" 
               : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
@@ -499,7 +499,7 @@ function App() {
           FIRE Calculator
         </button>
       </nav>
-      <main className="p-4 max-w-6xl mx-auto">
+      <main className="p-2 sm:p-4 max-w-6xl mx-auto">
         {/* Welcome state for new users */}
         {accounts.length > 0 && entries.length === 0 && page === "history" && (
           <div className="bg-white rounded shadow p-6 mt-4">

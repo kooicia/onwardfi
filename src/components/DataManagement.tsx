@@ -59,9 +59,9 @@ export default function DataManagement({ entries, onClearEntries, onClearAllData
   };
 
   return (
-    <div className="bg-white rounded shadow p-6 mt-4">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Data Management</h2>
+    <div className="bg-white rounded shadow p-4 sm:p-6 mt-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
+        <h2 className="text-lg sm:text-xl font-bold">Data Management</h2>
         <div className="flex gap-2">
           <button
             onClick={() => setShowConfirmClearAll(true)}
@@ -87,7 +87,7 @@ export default function DataManagement({ entries, onClearEntries, onClearAllData
         />
       ) : (
         <>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2">
                 <input

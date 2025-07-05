@@ -151,11 +151,11 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
   }
 
   return (
-    <div className="bg-white rounded shadow p-6 mt-4">
-      <h2 className="text-xl font-bold mb-6">Dashboard</h2>
+    <div className="bg-white rounded shadow p-4 sm:p-6 mt-4">
+      <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">Dashboard</h2>
       
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-6 sm:mb-8">
         <div className="bg-blue-50 p-4 rounded-lg">
           <div className="text-sm text-gray-600">Total Entries</div>
           <div className="text-2xl font-bold text-blue-700">{entries.length}</div>
@@ -181,9 +181,9 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
       </div>
 
       {/* Chart */}
-      <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Net Worth Trends</h3>
-        <div className="h-80">
+      <div className="mb-6 sm:mb-8">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">Net Worth Trends</h3>
+        <div className="h-64 sm:h-80">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -230,9 +230,9 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
       </div>
 
       {/* Account Details Table */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Account Details by Date</h3>
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+          <h3 className="text-base sm:text-lg font-semibold">Account Details by Date</h3>
           <div className="flex items-center space-x-2">
             <label className="flex items-center text-sm text-gray-700">
               <input

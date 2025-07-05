@@ -286,7 +286,7 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
   const renderAddForm = () => (
     <div className="bg-white rounded-lg shadow p-6 mb-6">
       <h3 className="text-lg font-semibold mb-4">Add New Account</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
           <input
@@ -348,11 +348,11 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
   );
 
   return (
-    <div className="bg-white rounded shadow p-6 mt-4">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Account Management</h2>
+    <div className="bg-white rounded shadow p-4 sm:p-6 mt-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
+        <h2 className="text-lg sm:text-xl font-bold">Account Management</h2>
         {!showAddForm && !editingAccountId && (
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <button
               onClick={() => setShowAddForm(true)}
               className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
