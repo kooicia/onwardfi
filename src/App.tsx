@@ -423,6 +423,23 @@ function App() {
             >
               Reset to New User
             </button>
+            <button
+              onClick={() => {
+                const debugInfo = {
+                  currentUserId,
+                  accountsCount: accounts.length,
+                  accounts: accounts.map(acc => ({ id: acc.id, name: acc.name, isPredefined: acc.id.startsWith('predef-') })),
+                  hasPredefined: accounts.some(acc => acc.id.startsWith('predef-')),
+                  localStorageKeys: Object.keys(localStorage).filter(key => key.startsWith('fire'))
+                };
+                console.log('Debug Info:', debugInfo);
+                alert(`Debug Info:\n- User ID: ${currentUserId}\n- Accounts: ${accounts.length}\n- Has Predefined: ${debugInfo.hasPredefined}\n- Predefined Accounts: ${accounts.filter(acc => acc.id.startsWith('predef-')).map(acc => acc.name).join(', ')}\n\nCheck console for full details.`);
+              }}
+              className="px-3 py-1 text-sm bg-purple-500 text-white rounded hover:bg-purple-600"
+              title="Debug account information"
+            >
+              Debug Accounts
+            </button>
             <Auth
               onLogin={handleLogin}
               onLogout={handleLogout}
