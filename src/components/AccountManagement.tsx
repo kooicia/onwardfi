@@ -77,22 +77,8 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
   };
 
   const handleDeleteAllPredefinedAccounts = () => {
-    // Delete all accounts that have predefined names
-    const predefinedNames = [
-      'Emergency Fund', 'Stock Portfolio', 'Bitcoin', 'Primary Residence', 'Precious Metals',
-      'Mortgage', 'Car Loan', 'Credit Card', 'Medical Debt', 'Student Loan', 'Personal Loan',
-      'Investment Account', 'Savings Account', 'Checking Account', 'Retirement Account',
-      'Sample', 'sample' // Also catch sample accounts
-    ];
-    
-    // Find accounts that match predefined names
-    const accountsToDelete = accounts.filter(acc => 
-      predefinedNames.some(name => 
-        acc.name.toLowerCase().includes(name.toLowerCase()) ||
-        acc.name.toLowerCase().startsWith('sample-') ||
-        acc.name.toLowerCase().startsWith('sample ')
-      )
-    );
+    // Delete all accounts that have predefined IDs (start with 'predef-')
+    const accountsToDelete = accounts.filter(acc => acc.id.startsWith('predef-'));
     
     console.log('Accounts to delete:', accountsToDelete.map(acc => acc.name));
     console.log('Total accounts:', accounts.length);
@@ -232,22 +218,31 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
       );
     }
 
+    const isPredefined = account.id.startsWith('predef-');
+    
     return (
-      <div key={account.id} className="flex items-center justify-between bg-white p-3 rounded border">
-        <div>
+      <div key={account.id} className={`flex items-center justify-between p-3 rounded border ${isPredefined ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}`}>
+        <div className="flex items-center gap-2">
           <span className="font-medium">{account.name}</span>
-          <span className="text-gray-500 ml-2">({account.currency})</span>
+          {isPredefined && (
+            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+              Predefined
+            </span>
+          )}
+          <span className="text-gray-500">({account.currency})</span>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => startEdit(account)}
             className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+            title={isPredefined ? "Edit predefined account" : "Edit account"}
           >
             Edit
           </button>
           <button
             onClick={() => handleDeleteAccount(account.id)}
             className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
+            title={isPredefined ? "Delete predefined account" : "Delete account"}
           >
             Delete
           </button>
@@ -427,7 +422,7 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
         <EmptyState
           variant="accounts"
           title="Predefined Accounts Ready"
-          description="We've set up some common accounts to help you get started. You can edit these accounts or add your own custom accounts to build a complete picture of your finances."
+          description="We've set up some common accounts to help you get started. These accounts are marked with a 'Predefined' badge and can be edited or deleted as needed."
           action={{
             label: "Add Custom Account",
             onClick: () => setShowAddForm(true),
@@ -440,10 +435,10 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
           }}
           showSteps={true}
           steps={[
-            "Review and edit the predefined accounts as needed",
+            "Review the predefined accounts below (marked with blue badges)",
+            "Click 'Edit' to rename or modify any predefined account",
             "Add your own custom accounts for a complete financial picture",
-            "Start tracking your daily net worth with the Daily Entry tab",
-            "Monitor your progress in the Dashboard"
+            "Start tracking your daily net worth with the Daily Entry tab"
           ]}
         />
       ) : (
