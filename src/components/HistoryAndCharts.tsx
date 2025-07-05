@@ -183,9 +183,9 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
       {/* Chart */}
       <div className="mb-6 sm:mb-8">
         <h3 className="text-base sm:text-lg font-semibold mb-4">Net Worth Trends</h3>
-        <div className="h-64 sm:h-80">
+        <div className="h-64 sm:h-80" style={{ marginLeft: '20px' }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LineChart data={chartData} margin={{ left: 20, right: 20, top: 20, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="date" 
@@ -195,7 +195,17 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
                 height={80}
               />
               <YAxis 
-                tickFormatter={formatCurrencyForDisplay}
+                tickFormatter={(value) => {
+                  // Round to nearest thousand for cleaner Y-axis labels
+                  const rounded = Math.round(value / 1000) * 1000;
+                  // Format without decimals for Y-axis
+                  return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: preferredCurrency,
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                  }).format(rounded);
+                }}
                 tick={{ fontSize: 12 }}
               />
               <Tooltip content={<CustomTooltip />} />
@@ -252,33 +262,41 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
         }}>
           <table className="min-w-full bg-white" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
             <thead className="bg-gray-50">
-              {showOriginalCurrency ? (
-                <>
-                  <tr>
-                    <th className="px-4 py-3 text-sm text-gray-500 border-b border-r bg-gray-50" style={{ minWidth: '128px' }}>
-                      Account
-                    </th>
-                    {showOriginalCurrency && (
-                      <th className="px-4 py-3 text-sm text-gray-500 border-b border-r bg-gray-50" style={{ minWidth: '48px' }}>
-                        Currency
-                      </th>
-                    )}
-                    {sortedEntries.map((entry) => (
-                      <th key={entry.id} className="px-4 py-3 text-sm text-gray-500 border-b text-center" style={{ minWidth: '100px' }}>
-                        {new Date(entry.date).toLocaleDateString()}
-                      </th>
-                    ))}
-                  </tr>
-                </>
-              ) : (
+              <tr>
+                <th className="px-4 py-3 text-sm text-gray-500 border-b border-r bg-gray-50" style={{ minWidth: '128px' }}>
+                  Account
+                </th>
+                {showOriginalCurrency && (
+                  <th className="px-4 py-3 text-sm text-gray-500 border-b border-r bg-gray-50" style={{ minWidth: '48px' }}>
+                    Currency
+                  </th>
+                )}
+                {sortedEntries.map((entry) => (
+                  <th 
+                    key={entry.id} 
+                    className="px-4 py-3 text-sm text-gray-500 border-b text-center" 
+                    style={{ minWidth: showOriginalCurrency ? '200px' : '100px' }}
+                    colSpan={showOriginalCurrency ? 2 : 1}
+                  >
+                    {new Date(entry.date).toLocaleDateString()}
+                  </th>
+                ))}
+              </tr>
+              {showOriginalCurrency && (
                 <tr>
-                  <th className="px-4 py-3 text-sm text-gray-500 border-b border-r bg-gray-50" style={{ minWidth: '128px' }}>
-                    Account
+                  <th className="px-4 py-2 text-xs text-gray-400 border-b border-r bg-gray-50" style={{ minWidth: '128px' }}>
+                  </th>
+                  <th className="px-4 py-2 text-xs text-gray-400 border-b border-r bg-gray-50" style={{ minWidth: '48px' }}>
                   </th>
                   {sortedEntries.map((entry) => (
-                    <th key={entry.id} className="px-4 py-3 text-sm text-gray-500 border-b text-center" style={{ minWidth: '100px' }}>
-                      {new Date(entry.date).toLocaleDateString()}
-                    </th>
+                    <React.Fragment key={`${entry.id}-subheader`}>
+                      <th className="px-4 py-2 text-xs text-gray-400 border-b text-center" style={{ minWidth: '100px' }}>
+                        Original
+                      </th>
+                      <th className="px-4 py-2 text-xs text-gray-400 border-b text-center" style={{ minWidth: '100px' }}>
+                        USD
+                      </th>
+                    </React.Fragment>
                   ))}
                 </tr>
               )}

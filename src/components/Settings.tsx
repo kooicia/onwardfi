@@ -328,32 +328,6 @@ export default function Settings({
 
       {editingType && renderAddForm()}
 
-      {/* Check if user has added any custom categories beyond defaults */}
-      {(() => {
-        const hasCustomAssetCategories = assetCategories.length > ASSET_CATEGORIES.length;
-        const hasCustomLiabilityCategories = liabilityCategories.length > LIABILITY_CATEGORIES.length;
-        const hasAnyCustomCategories = hasCustomAssetCategories || hasCustomLiabilityCategories;
-
-        return !hasAnyCustomCategories && !editingType ? (
-        <div className="mb-6">
-          <EmptyState
-            variant="default"
-            title="Using Default Categories"
-            description="You're currently using the default account categories. You can customize these by adding your own categories to better organize your financial accounts."
-            action={{
-              label: "Add Custom Category",
-              onClick: () => {
-                setEditingType('asset');
-                setFormData({ value: '', label: '' });
-              },
-              variant: "outline"
-            }}
-            className="py-8"
-          />
-        </div>
-        ) : null;
-      })()}
-
       {renderCategorySection(assetCategories, 'Asset Categories', 'asset')}
       {renderCategorySection(liabilityCategories, 'Liability Categories', 'liability')}
 

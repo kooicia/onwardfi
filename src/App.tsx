@@ -394,7 +394,7 @@ function App() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white p-4 sm:p-8 rounded-lg shadow-md max-w-md w-full">
-          <h1 className="text-xl sm:text-2xl font-bold text-center mb-6 text-blue-700">
+          <h1 className="text-lg sm:text-xl font-bold text-center mb-6 text-blue-700">
             FIRE Net Worth Tracker
           </h1>
           <Auth
@@ -412,10 +412,10 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow p-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
-          <div className="font-bold text-xl sm:text-2xl text-blue-700">FIRE Net Worth Tracker</div>
-          <div className="flex items-center gap-4">
+      <header className="bg-white shadow p-1">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
+          <div className="font-bold text-lg sm:text-xl text-blue-700">FIRE Net Worth Tracker</div>
+          <div className="flex items-center gap-1">
             <Auth
               onLogin={handleLogin}
               onLogout={handleLogout}
@@ -427,7 +427,7 @@ function App() {
           </div>
         </div>
       </header>
-      <nav className="flex flex-wrap gap-2 bg-blue-50 px-4 py-2 overflow-x-auto">
+      <nav className="flex flex-wrap gap-1 bg-blue-50 px-3 py-2 overflow-x-auto">
         <button 
           className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
             page === "history" 

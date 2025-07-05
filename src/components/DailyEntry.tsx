@@ -172,37 +172,97 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
     return categories;
   };
 
+  const getPreviousValue = (accountId: string) => {
+    const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+    const previousEntry = sortedEntries
+      .filter(entry => entry.date < selectedDate)
+      .pop();
+    
+    return previousEntry?.accountValues[accountId] || 0;
+  };
+
+  const copyFromPrevious = (accountId: string) => {
+    const previousValue = getPreviousValue(accountId);
+    setAccountValues(prev => ({
+      ...prev,
+      [accountId]: previousValue
+    }));
+    setInputValues(prev => ({
+      ...prev,
+      [accountId]: previousValue.toString()
+    }));
+  };
+
+  const copyAllFromPrevious = (type: 'asset' | 'liability') => {
+    const typeAccounts = getAccountsByType(type);
+    const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+    const previousEntry = sortedEntries
+      .filter(entry => entry.date < selectedDate)
+      .pop();
+    
+    if (!previousEntry) return;
+    
+    const newAccountValues = { ...accountValues };
+    const newInputValues = { ...inputValues };
+    
+    typeAccounts.forEach(account => {
+      const previousValue = previousEntry.accountValues[account.id] || 0;
+      newAccountValues[account.id] = previousValue;
+      newInputValues[account.id] = previousValue.toString();
+    });
+    
+    setAccountValues(newAccountValues);
+    setInputValues(newInputValues);
+  };
+
   const { totalAssets, totalLiabilities, netWorth } = calculateTotals();
 
-  const renderAccountCard = (account: Account) => (
-    <div key={account.id} className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
-      <div className="mb-2">
-        <div className="font-semibold text-gray-900 text-sm truncate">{account.name}</div>
-        <div className="text-xs text-gray-500">{account.currency}</div>
-      </div>
-      <div className="space-y-1">
-        <input
-          type="text"
-          value={inputValues[account.id] || ''}
-          onChange={(e) => handleAccountValueChange(account.id, e.target.value)}
-          onBlur={(e) => handleAccountValueBlur(account.id, e.target.value)}
-          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-          placeholder="0.00 or 80*1000"
-          inputMode="text"
-        />
-        {accountValues[account.id] ? (
-          <div className="text-xs text-gray-600">
-            <div className="truncate">{formatCurrency(accountValues[account.id], account.currency)}</div>
-            <div className="text-gray-400 truncate">
-              = {formatCurrency(convertCurrency(accountValues[account.id], account.currency, preferredCurrency), preferredCurrency)}
+  const renderAccountCard = (account: Account) => {
+    const hasPreviousValue = getPreviousValue(account.id) > 0;
+    
+    return (
+      <div key={account.id} className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
+        <div className="mb-2">
+          <div className="flex justify-between items-start">
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-gray-900 text-sm truncate">{account.name}</div>
+              <div className="text-xs text-gray-500">{account.currency}</div>
             </div>
+            {hasPreviousValue && (
+              <button
+                onClick={() => copyFromPrevious(account.id)}
+                className="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                title={`Copy from previous entry (${formatCurrency(getPreviousValue(account.id), account.currency)})`}
+              >
+                Copy
+              </button>
+            )}
           </div>
-        ) : (
-          <div className="text-xs text-gray-400 h-6"></div>
-        )}
+        </div>
+        <div className="space-y-1">
+          <input
+            type="text"
+            value={inputValues[account.id] || ''}
+            onChange={(e) => handleAccountValueChange(account.id, e.target.value)}
+            onBlur={(e) => handleAccountValueBlur(account.id, e.target.value)}
+            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            placeholder="0.00 or 80*1000"
+            inputMode="text"
+          />
+          {accountValues[account.id] ? (
+            <div className="text-xs text-gray-600">
+              <div className="truncate">{formatCurrency(accountValues[account.id], account.currency)}</div>
+              <div className="text-gray-400 truncate">
+                = {formatCurrency(convertCurrency(accountValues[account.id], account.currency, preferredCurrency), preferredCurrency)}
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-gray-400 h-6"></div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderAccountSection = (type: 'asset' | 'liability', title: string) => {
     const categories = getAccountsByCategory(type);
@@ -220,14 +280,49 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
     return (
       <div className="mb-8">
         <h3 className="text-lg font-semibold mb-4 text-gray-800">{title}</h3>
-        {Object.entries(categories).map(([category, categoryAccounts]) => (
-          <div key={category} className="mb-6">
-            <h4 className="text-md font-medium text-gray-700 mb-3">{category}</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {categoryAccounts.map(renderAccountCard)}
+        {Object.entries(categories).map(([category, categoryAccounts]) => {
+          const hasPreviousValues = categoryAccounts.some(account => getPreviousValue(account.id) > 0);
+          
+          return (
+            <div key={category} className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-md font-medium text-gray-700">{category}</h4>
+                <div className="flex gap-2">
+                  {hasPreviousValues && (
+                    <button
+                      onClick={() => {
+                        categoryAccounts.forEach(account => {
+                          const previousValue = getPreviousValue(account.id);
+                          if (previousValue > 0) {
+                            handleAccountValueChange(account.id, previousValue.toString());
+                          }
+                        });
+                      }}
+                      className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors"
+                      title={`Copy all ${category} values from previous entry`}
+                    >
+                      Copy {category}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      categoryAccounts.forEach(account => {
+                        handleAccountValueChange(account.id, '');
+                      });
+                    }}
+                    className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 transition-colors"
+                    title={`Clear all ${category} values`}
+                  >
+                    Clear {category}
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {categoryAccounts.map(renderAccountCard)}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
