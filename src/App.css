@@ -36,3 +36,39 @@
     transform: rotate(360deg);
   }
 }
+
+/* Asset hover effects */
+.asset-row:hover {
+  background-color: #f0fdf4 !important; /* Very light green */
+}
+
+.asset-cell:hover {
+  background-color: #dcfce7 !important; /* Light green */
+}
+
+/* Liability hover effects */
+.liability-row:hover {
+  background-color: #fef2f2 !important; /* Very light red */
+}
+
+.liability-cell:hover {
+  background-color: #fecaca !important; /* Light red */
+}
+
+/* Category total normal state */
+.asset-category-row {
+  background-color: #f7fef9 !important; /* Very light green background */
+}
+
+.liability-category-row {
+  background-color: #fef7f7 !important; /* Very light pink background */
+}
+
+/* Category total hover effects */
+.asset-category-row:hover {
+  background-color: #dcfce7 !important; /* Light green */
+}
+
+.liability-category-row:hover {
+  background-color: #fecaca !important; /* Light red */
+}

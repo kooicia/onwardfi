@@ -7,7 +7,10 @@ import DataImportExport from "./components/DataImportExport";
 import CurrencySelector from "./components/CurrencySelector";
 import Settings from "./components/Settings";
 import Auth from "./components/Auth";
+import FIRECalculator from "./components/FIRECalculator";
 import { Account, NetWorthEntry, AccountCategory, ASSET_CATEGORIES, LIABILITY_CATEGORIES } from "./types";
+import "./App.css";
+
 
 // import { auth } from "./firebase";
 // import { signInAnonymously, onAuthStateChanged, User } from "firebase/auth";
@@ -18,7 +21,7 @@ function App() {
   const [userEmail, setUserEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState('');
-  const [page, setPage] = useState("entry");
+  const [page, setPage] = useState("history");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [entries, setEntries] = useState<NetWorthEntry[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
@@ -358,12 +361,13 @@ function App() {
         </div>
       </header>
       <nav className="flex gap-4 bg-blue-50 px-4 py-2">
+        <button className={`px-3 py-1 rounded ${page === "history" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("history")}>Dashboard</button>
         <button className={`px-3 py-1 rounded ${page === "entry" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("entry")}>Daily Entry</button>
         <button className={`px-3 py-1 rounded ${page === "accounts" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("accounts")}>Accounts</button>
-        <button className={`px-3 py-1 rounded ${page === "history" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("history")}>History & Charts</button>
         <button className={`px-3 py-1 rounded ${page === "data" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("data")}>Data Management</button>
         <button className={`px-3 py-1 rounded ${page === "importexport" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("importexport")}>Import/Export</button>
         <button className={`px-3 py-1 rounded ${page === "settings" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("settings")}>Settings</button>
+        <button className={`px-3 py-1 rounded ${page === "firecalculator" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("firecalculator")}>FIRE Calculator</button>
       </nav>
       <main className="p-4 max-w-6xl mx-auto">
         {page === "entry" && (
@@ -414,6 +418,11 @@ function App() {
             onCurrencyChange={setPreferredCurrency}
           />
         )}
+                 {page === "firecalculator" && (
+           <FIRECalculator
+             preferredCurrency={preferredCurrency}
+           />
+         )}
       </main>
     </div>
   );

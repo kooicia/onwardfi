@@ -2,7 +2,7 @@
   "name": "net-worth-tracker",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://penny.github.io/net-worth-tracker",
+  "homepage": "https://kooicia.github.io/net-worth-tracker",
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
