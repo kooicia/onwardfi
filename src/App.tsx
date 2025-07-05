@@ -403,14 +403,35 @@ function App() {
       <header className="bg-white shadow p-4">
         <div className="flex justify-between items-center mb-2">
           <div className="font-bold text-2xl text-blue-700">FIRE Net Worth Tracker</div>
-          <Auth
-            onLogin={handleLogin}
-            onLogout={handleLogout}
-            isLoggedIn={isLoggedIn}
-            userEmail={userEmail}
-            isLoading={isLoading}
-            error={authError}
-          />
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                if (window.confirm('This will clear all your data and reset you to a new user with predefined accounts. Continue?')) {
+                  // Clear all localStorage data for current user
+                  const keys = Object.keys(localStorage);
+                  keys.forEach(key => {
+                    if (key.startsWith('fire')) {
+                      localStorage.removeItem(key);
+                    }
+                  });
+                  // Reload the page
+                  window.location.reload();
+                }
+              }}
+              className="px-3 py-1 text-sm bg-orange-500 text-white rounded hover:bg-orange-600"
+              title="Reset to new user with predefined accounts"
+            >
+              Reset to New User
+            </button>
+            <Auth
+              onLogin={handleLogin}
+              onLogout={handleLogout}
+              isLoggedIn={isLoggedIn}
+              userEmail={userEmail}
+              isLoading={isLoading}
+              error={authError}
+            />
+          </div>
         </div>
       </header>
       <nav className="flex gap-4 bg-blue-50 px-4 py-2">
