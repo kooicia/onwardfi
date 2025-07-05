@@ -1,0 +1,227 @@
+// Exchange rates (as of a recent date - in a real app, these would come from an API)
+// Base currency is USD
+export const exchangeRates: { [key: string]: number } = {
+  USD: 1.0,
+  EUR: 0.85,
+  GBP: 0.73,
+  SGD: 1.35,
+  JPY: 110.0,
+  CAD: 1.25,
+  AUD: 1.35,
+  CHF: 0.92,
+  CNY: 6.45,
+  INR: 74.5,
+  KRW: 1150.0,
+  THB: 33.0,
+  MYR: 4.15,
+  IDR: 14250.0,
+  PHP: 50.5,
+  VND: 23000.0,
+  HKD: 7.8,
+  TWD: 28.0,
+  NZD: 1.4,
+  SEK: 8.5,
+  NOK: 8.8,
+  DKK: 6.3,
+  PLN: 3.8,
+  CZK: 21.5,
+  HUF: 300.0,
+  RON: 4.2,
+  BGN: 1.65,
+  HRK: 6.3,
+  RUB: 75.0,
+  TRY: 8.5,
+  BRL: 5.2,
+  MXN: 20.0,
+  ARS: 95.0,
+  CLP: 750.0,
+  COP: 3800.0,
+  PEN: 3.8,
+  UYU: 42.0,
+  ZAR: 14.5,
+  EGP: 15.7,
+  NGN: 410.0,
+  KES: 110.0,
+  GHS: 6.0,
+  MAD: 9.0,
+  TND: 2.8,
+  AED: 3.67,
+  SAR: 3.75,
+  QAR: 3.64,
+  KWD: 0.30,
+  BHD: 0.38,
+  OMR: 0.38,
+  JOD: 0.71,
+  LBP: 1500.0,
+  ILS: 3.2,
+  LYD: 4.5,
+  DZD: 135.0,
+  XOF: 550.0,
+  XAF: 550.0,
+  UGX: 3500.0,
+  TZS: 2300.0,
+  ZMW: 18.0,
+  BWP: 11.0,
+  NAD: 14.5,
+  SZL: 14.5,
+  LSL: 14.5,
+  MUR: 40.0,
+  SCR: 13.5,
+  MVR: 15.4,
+  BDT: 85.0,
+  NPR: 120.0,
+  PKR: 160.0,
+  LKR: 200.0,
+  MMK: 1650.0,
+  KHR: 4100.0,
+  LAK: 9500.0,
+  MNT: 2850.0,
+  KZT: 420.0,
+  UZS: 10500.0,
+  TJS: 11.0,
+  KGS: 84.0,
+  TMT: 3.5,
+  AZN: 1.7,
+  GEL: 3.1,
+  AMD: 500.0,
+  BYN: 2.5,
+  MDL: 17.5,
+  UAH: 27.0,
+};
+
+export const currencyNames: { [key: string]: string } = {
+  USD: 'US Dollar',
+  EUR: 'Euro',
+  GBP: 'British Pound',
+  SGD: 'Singapore Dollar',
+  JPY: 'Japanese Yen',
+  CAD: 'Canadian Dollar',
+  AUD: 'Australian Dollar',
+  CHF: 'Swiss Franc',
+  CNY: 'Chinese Yuan',
+  INR: 'Indian Rupee',
+  KRW: 'South Korean Won',
+  THB: 'Thai Baht',
+  MYR: 'Malaysian Ringgit',
+  IDR: 'Indonesian Rupiah',
+  PHP: 'Philippine Peso',
+  VND: 'Vietnamese Dong',
+  HKD: 'Hong Kong Dollar',
+  TWD: 'Taiwan Dollar',
+  NZD: 'New Zealand Dollar',
+  SEK: 'Swedish Krona',
+  NOK: 'Norwegian Krone',
+  DKK: 'Danish Krone',
+  PLN: 'Polish Złoty',
+  CZK: 'Czech Koruna',
+  HUF: 'Hungarian Forint',
+  RON: 'Romanian Leu',
+  BGN: 'Bulgarian Lev',
+  HRK: 'Croatian Kuna',
+  RUB: 'Russian Ruble',
+  TRY: 'Turkish Lira',
+  BRL: 'Brazilian Real',
+  MXN: 'Mexican Peso',
+  ARS: 'Argentine Peso',
+  CLP: 'Chilean Peso',
+  COP: 'Colombian Peso',
+  PEN: 'Peruvian Sol',
+  UYU: 'Uruguayan Peso',
+  ZAR: 'South African Rand',
+  EGP: 'Egyptian Pound',
+  NGN: 'Nigerian Naira',
+  KES: 'Kenyan Shilling',
+  GHS: 'Ghanaian Cedi',
+  MAD: 'Moroccan Dirham',
+  TND: 'Tunisian Dinar',
+  AED: 'UAE Dirham',
+  SAR: 'Saudi Riyal',
+  QAR: 'Qatari Riyal',
+  KWD: 'Kuwaiti Dinar',
+  BHD: 'Bahraini Dinar',
+  OMR: 'Omani Rial',
+  JOD: 'Jordanian Dinar',
+  LBP: 'Lebanese Pound',
+  ILS: 'Israeli Shekel',
+  LYD: 'Libyan Dinar',
+  DZD: 'Algerian Dinar',
+  XOF: 'West African CFA Franc',
+  XAF: 'Central African CFA Franc',
+  UGX: 'Ugandan Shilling',
+  TZS: 'Tanzanian Shilling',
+  ZMW: 'Zambian Kwacha',
+  BWP: 'Botswana Pula',
+  NAD: 'Namibian Dollar',
+  SZL: 'Swazi Lilangeni',
+  LSL: 'Lesotho Loti',
+  MUR: 'Mauritian Rupee',
+  SCR: 'Seychellois Rupee',
+  MVR: 'Maldivian Rufiyaa',
+  BDT: 'Bangladeshi Taka',
+  NPR: 'Nepalese Rupee',
+  PKR: 'Pakistani Rupee',
+  LKR: 'Sri Lankan Rupee',
+  MMK: 'Myanmar Kyat',
+  KHR: 'Cambodian Riel',
+  LAK: 'Lao Kip',
+  MNT: 'Mongolian Tögrög',
+  KZT: 'Kazakhstani Tenge',
+  UZS: 'Uzbekistani Som',
+  TJS: 'Tajikistani Somoni',
+  KGS: 'Kyrgyzstani Som',
+  TMT: 'Turkmenistan Manat',
+  AZN: 'Azerbaijani Manat',
+  GEL: 'Georgian Lari',
+  AMD: 'Armenian Dram',
+  BYN: 'Belarusian Ruble',
+  MDL: 'Moldovan Leu',
+  UAH: 'Ukrainian Hryvnia',
+};
+
+export function convertCurrency(amount: number, fromCurrency: string, toCurrency: string): number {
+  if (fromCurrency === toCurrency) {
+    return amount;
+  }
+
+  const fromRate = exchangeRates[fromCurrency];
+  const toRate = exchangeRates[toCurrency];
+
+  if (!fromRate || !toRate) {
+    console.warn(`Exchange rate not found for ${fromCurrency} or ${toCurrency}`);
+    return amount; // Return original amount if conversion not possible
+  }
+
+  // Convert to USD first, then to target currency
+  const usdAmount = amount / fromRate;
+  return usdAmount * toRate;
+}
+
+export function formatCurrency(amount: number, currency: string): string {
+  const currencyCode = currency.toUpperCase();
+  
+  // Special formatting for some currencies
+  const formatters: { [key: string]: Intl.NumberFormat } = {
+    USD: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }),
+    EUR: new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }),
+    GBP: new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }),
+    JPY: new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }),
+    CNY: new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }),
+    INR: new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }),
+    KRW: new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }),
+    SGD: new Intl.NumberFormat('en-SG', { style: 'currency', currency: 'SGD' }),
+    CAD: new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }),
+    AUD: new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }),
+  };
+
+  const formatter = formatters[currencyCode] || 
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode });
+
+  return formatter.format(amount);
+}
+
+export function getAvailableCurrencies(): Array<{ code: string; name: string }> {
+  return Object.keys(exchangeRates).map(code => ({
+    code,
+    name: currencyNames[code] || code
+  })).sort((a, b) => a.name.localeCompare(b.name));
+} 
