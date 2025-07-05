@@ -418,31 +418,30 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
             "Don't forget to include loans, mortgages, and credit card debt"
           ]}
         />
-      ) : hasPredefinedAccounts() && accounts.filter(acc => !acc.id.startsWith('predef-')).length === 0 ? (
-        <EmptyState
-          variant="accounts"
-          title="Predefined Accounts Ready"
-          description="We've set up some common accounts to help you get started. These accounts are marked with a 'Predefined' badge and can be edited or deleted as needed."
-          action={{
-            label: "Add Custom Account",
-            onClick: () => setShowAddForm(true),
-            variant: "primary"
-          }}
-          secondaryAction={{
-            label: "Start Daily Entry",
-            onClick: () => window.location.href = '#entry',
-            variant: "outline"
-          }}
-          showSteps={true}
-          steps={[
-            "Review the predefined accounts below (marked with blue badges)",
-            "Click 'Edit' to rename or modify any predefined account",
-            "Add your own custom accounts for a complete financial picture",
-            "Start tracking your daily net worth with the Daily Entry tab"
-          ]}
-        />
       ) : (
         <>
+          {hasPredefinedAccounts() && accounts.filter(acc => !acc.id.startsWith('predef-')).length === 0 && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h3 className="text-lg font-semibold text-blue-800 mb-2">Predefined Accounts Ready</h3>
+              <p className="text-blue-700 mb-3">
+                We've set up some common accounts to help you get started. These accounts are marked with a 'Predefined' badge and can be edited or deleted as needed.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Add Custom Account
+                </button>
+                <button
+                  onClick={() => window.location.href = '#entry'}
+                  className="px-4 py-2 bg-white text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
+                >
+                  Start Daily Entry
+                </button>
+              </div>
+            </div>
+          )}
           {renderCategorySection(assetCategories, 'Assets')}
           {renderCategorySection(liabilityCategories, 'Liabilities')}
         </>
