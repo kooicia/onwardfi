@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { NetWorthEntry } from '../types';
+import EmptyState from './EmptyState';
 
 interface DataManagementProps {
   entries: NetWorthEntry[];
@@ -72,10 +73,18 @@ export default function DataManagement({ entries, onClearEntries, onClearAllData
       </div>
 
       {entries.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500 mb-4">No data entries found.</p>
-          <p className="text-sm text-gray-400">Add some daily entries to see them here.</p>
-        </div>
+        <EmptyState
+          variant="data"
+          title="No Data to Manage"
+          description="You haven't created any net worth entries yet. Start tracking your daily financial data to see it appear here for management and analysis."
+          action={{
+            label: "Create First Entry",
+            onClick: () => {
+              window.location.hash = '#entry';
+            },
+            variant: "primary"
+          }}
+        />
       ) : (
         <>
           <div className="mb-4 flex items-center justify-between">

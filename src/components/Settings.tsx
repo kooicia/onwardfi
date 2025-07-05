@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AccountCategory, ASSET_CATEGORIES, LIABILITY_CATEGORIES } from '../types';
 import CurrencySelector from './CurrencySelector';
+import EmptyState from './EmptyState';
 
 interface SettingsProps {
   assetCategories: AccountCategory[];
@@ -17,7 +18,7 @@ export default function Settings({
   preferredCurrency,
   onCurrencyChange
 }: SettingsProps) {
-  const [editingCategory, setEditingCategory] = useState<AccountCategory | null>(null);
+  const [editingCategoryValue, setEditingCategoryValue] = useState<string | null>(null);
   const [editingType, setEditingType] = useState<'asset' | 'liability' | null>(null);
   const [formData, setFormData] = useState({
     value: '',
@@ -47,12 +48,16 @@ export default function Settings({
     }
 
     setFormData({ value: '', label: '' });
-    setEditingCategory(null);
+    setEditingCategoryValue(null);
     setEditingType(null);
   };
 
-  const handleEditCategory = () => {
-    if (!editingCategory || !formData.value || !formData.label) return;
+  const handleEditCategory = (categoryValue: string) => {
+    if (!formData.value || !formData.label) return;
+
+    // Find the category being edited
+    const editingCategory = [...assetCategories, ...liabilityCategories].find(cat => cat.value === categoryValue);
+    if (!editingCategory) return;
 
     // Check if the new value conflicts with existing categories (excluding the current one)
     const allCategories = [...assetCategories, ...liabilityCategories];
@@ -85,7 +90,7 @@ export default function Settings({
     }
 
     setFormData({ value: '', label: '' });
-    setEditingCategory(null);
+    setEditingCategoryValue(null);
     setEditingType(null);
   };
 
@@ -105,8 +110,7 @@ export default function Settings({
   };
 
   const startEdit = (category: AccountCategory) => {
-    setEditingCategory(category);
-    setEditingType(category.type);
+    setEditingCategoryValue(category.value);
     setFormData({
       value: category.value,
       label: category.label
@@ -114,7 +118,7 @@ export default function Settings({
   };
 
   const cancelEdit = () => {
-    setEditingCategory(null);
+    setEditingCategoryValue(null);
     setEditingType(null);
     setFormData({ value: '', label: '' });
   };
@@ -125,11 +129,86 @@ export default function Settings({
     }
   };
 
-  const renderCategoryForm = () => (
+  const renderCategoryRow = (category: AccountCategory) => {
+    const isEditing = editingCategoryValue === category.value;
+    
+    if (isEditing) {
+      return (
+        <div key={category.value} className="bg-blue-50 p-3 rounded border border-blue-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Category Value</label>
+              <input
+                type="text"
+                value={formData.value}
+                onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="e.g., real-estate"
+                disabled={true} // Don't allow editing the value once created
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Internal identifier (cannot be changed)
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Display Name</label>
+              <input
+                type="text"
+                value={formData.label}
+                onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="e.g., Real Estate"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Name shown to users
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleEditCategory(category.value)}
+              className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+            >
+              Save
+            </button>
+            <button
+              onClick={cancelEdit}
+              className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div key={category.value} className="flex items-center justify-between bg-white p-3 rounded border">
+        <div>
+          <span className="font-medium">{category.label}</span>
+          <span className="text-gray-500 ml-2 text-sm">({category.value})</span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => startEdit(category)}
+            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => handleDeleteCategory(category)}
+            className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAddForm = () => (
     <div className="bg-white rounded-lg shadow p-6 mb-6">
-      <h3 className="text-lg font-semibold mb-4">
-        {editingCategory ? 'Edit Category' : 'Add New Category'}
-      </h3>
+      <h3 className="text-lg font-semibold mb-4">Add New Category</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Category Value</label>
@@ -139,7 +218,6 @@ export default function Settings({
             onChange={(e) => setFormData({ ...formData, value: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="e.g., real-estate"
-            disabled={!!editingCategory} // Don't allow editing the value once created
           />
           <p className="text-xs text-gray-500 mt-1">
             This is the internal identifier (auto-converted to lowercase with hyphens)
@@ -164,7 +242,6 @@ export default function Settings({
             value={editingType || ''}
             onChange={(e) => setEditingType(e.target.value as 'asset' | 'liability')}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={!!editingCategory} // Don't allow changing type once created
           >
             <option value="">Select type</option>
             <option value="asset">Asset</option>
@@ -174,11 +251,11 @@ export default function Settings({
       </div>
       <div className="flex gap-3 mt-4">
         <button
-          onClick={editingCategory ? handleEditCategory : () => editingType && handleAddCategory(editingType)}
+          onClick={() => editingType && handleAddCategory(editingType)}
           disabled={!formData.value || !formData.label || !editingType}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {editingCategory ? 'Update Category' : 'Add Category'}
+          Add Category
         </button>
         <button
           onClick={cancelEdit}
@@ -194,7 +271,7 @@ export default function Settings({
     <div className="mb-8">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-        {!editingCategory && (
+        {!editingCategoryValue && !editingType && (
           <button
             onClick={() => {
               setEditingType(type);
@@ -210,28 +287,7 @@ export default function Settings({
         <p className="text-gray-500 italic">No {type} categories defined</p>
       ) : (
         <div className="space-y-2">
-          {categories.map(category => (
-            <div key={category.value} className="flex items-center justify-between bg-white p-3 rounded border">
-              <div>
-                <span className="font-medium">{category.label}</span>
-                <span className="text-gray-500 ml-2 text-sm">({category.value})</span>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => startEdit(category)}
-                  className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDeleteCategory(category)}
-                  className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
+          {categories.map(category => renderCategoryRow(category))}
         </div>
       )}
     </div>
@@ -241,7 +297,7 @@ export default function Settings({
     <div className="bg-white rounded shadow p-6 mt-4">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Settings</h2>
-        {!editingCategory && (
+        {!editingCategoryValue && !editingType && (
           <button
             onClick={resetToDefaults}
             className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
@@ -268,7 +324,33 @@ export default function Settings({
         </div>
       </div>
 
-      {(editingCategory || editingType) && renderCategoryForm()}
+      {editingType && renderAddForm()}
+
+      {/* Check if user has added any custom categories beyond defaults */}
+      {(() => {
+        const hasCustomAssetCategories = assetCategories.length > ASSET_CATEGORIES.length;
+        const hasCustomLiabilityCategories = liabilityCategories.length > LIABILITY_CATEGORIES.length;
+        const hasAnyCustomCategories = hasCustomAssetCategories || hasCustomLiabilityCategories;
+
+        return !hasAnyCustomCategories && !editingType ? (
+        <div className="mb-6">
+          <EmptyState
+            variant="default"
+            title="Using Default Categories"
+            description="You're currently using the default account categories. You can customize these by adding your own categories to better organize your financial accounts."
+            action={{
+              label: "Add Custom Category",
+              onClick: () => {
+                setEditingType('asset');
+                setFormData({ value: '', label: '' });
+              },
+              variant: "outline"
+            }}
+            className="py-8"
+          />
+        </div>
+        ) : null;
+      })()}
 
       {renderCategorySection(assetCategories, 'Asset Categories', 'asset')}
       {renderCategorySection(liabilityCategories, 'Liability Categories', 'liability')}

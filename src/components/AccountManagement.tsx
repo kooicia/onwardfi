@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Account, AccountCategory, CURRENCIES } from '../types';
+import EmptyState from './EmptyState';
 
 interface AccountManagementProps {
   accounts: Account[];
@@ -10,12 +11,31 @@ interface AccountManagementProps {
 
 export default function AccountManagement({ accounts, onAccountsChange, assetCategories, liabilityCategories }: AccountManagementProps) {
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
     name: '',
     category: '',
     currency: 'USD'
   });
+
+  // Handle click outside to close the More menu
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setShowMoreMenu(false);
+      }
+    }
+
+    if (showMoreMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMoreMenu]);
 
   const handleAddAccount = () => {
     if (!formData.name || !formData.category) return;
@@ -36,22 +56,24 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
     setShowAddForm(false);
   };
 
-  const handleEditAccount = () => {
-    if (!editingAccount || !formData.name || !formData.category) return;
+  const handleEditAccount = (accountId: string) => {
+    if (!formData.name || !formData.category) return;
 
     const updatedAccounts = accounts.map(acc => 
-      acc.id === editingAccount.id 
+      acc.id === accountId 
         ? { ...acc, name: formData.name, category: formData.category, currency: formData.currency }
         : acc
     );
 
     onAccountsChange(updatedAccounts);
     setFormData({ name: '', category: '', currency: 'USD' });
-    setEditingAccount(null);
+    setEditingAccountId(null);
   };
 
   const handleDeleteAccount = (accountId: string) => {
-    onAccountsChange(accounts.filter(acc => acc.id !== accountId));
+    if (window.confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
+      onAccountsChange(accounts.filter(acc => acc.id !== accountId));
+    }
   };
 
   const handleDeleteAllPredefinedAccounts = () => {
@@ -81,13 +103,24 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
       return;
     }
     
-    if (window.confirm(`Are you sure you want to delete ${accountsToDelete.length} predefined accounts?\n\nAccounts to be deleted:\n${accountsToDelete.map(acc => `• ${acc.name}`).join('\n')}\n\nThis action cannot be undone.`)) {
+    const confirmMessage = `Are you sure you want to delete ${accountsToDelete.length} predefined accounts?\n\nAccounts to be deleted:\n${accountsToDelete.map(acc => `• ${acc.name}`).join('\n')}\n\nThis action cannot be undone.`;
+    
+    if (window.confirm(confirmMessage)) {
       const filteredAccounts = accounts.filter(acc => 
         !accountsToDelete.some(toDelete => toDelete.id === acc.id)
       );
       
       onAccountsChange(filteredAccounts);
       alert(`Successfully deleted ${accountsToDelete.length} predefined accounts.`);
+    }
+  };
+
+  const handleDeleteAllAccounts = () => {
+    const confirmMessage = `Are you sure you want to delete ALL ${accounts.length} accounts?\n\nThis will permanently remove all your accounts and cannot be undone.\n\nPlease make sure you have backed up your data before proceeding.`;
+    
+    if (window.confirm(confirmMessage)) {
+      onAccountsChange([]);
+      alert(`Successfully deleted all ${accounts.length} accounts.`);
     }
   };
 
@@ -109,7 +142,7 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
   };
 
   const startEdit = (account: Account) => {
-    setEditingAccount(account);
+    setEditingAccountId(account.id);
     setFormData({
       name: account.name,
       category: account.category,
@@ -118,13 +151,109 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
   };
 
   const cancelEdit = () => {
-    setEditingAccount(null);
+    setEditingAccountId(null);
     setFormData({ name: '', category: '', currency: 'USD' });
     setShowAddForm(false);
   };
 
   const getAccountsByCategory = (categoryValue: string) => {
     return accounts.filter(acc => acc.category === categoryValue);
+  };
+
+  const hasPredefinedAccounts = () => {
+    return accounts.some(acc => acc.id.startsWith('predef-'));
+  };
+
+  const renderAccountRow = (account: Account) => {
+    const isEditing = editingAccountId === account.id;
+    
+    if (isEditing) {
+      return (
+        <div key={account.id} className="bg-blue-50 p-3 rounded border border-blue-200">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Account Name</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="Account name"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="">Select category</option>
+                <optgroup label="Assets">
+                  {assetCategories.map(cat => (
+                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Liabilities">
+                  {liabilityCategories.map(cat => (
+                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Currency</label>
+              <select
+                value={formData.currency}
+                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                {CURRENCIES.map(curr => (
+                  <option key={curr.code} value={curr.code}>{curr.name} ({curr.code})</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleEditAccount(account.id)}
+              className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
+            >
+              Save
+            </button>
+            <button
+              onClick={cancelEdit}
+              className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div key={account.id} className="flex items-center justify-between bg-white p-3 rounded border">
+        <div>
+          <span className="font-medium">{account.name}</span>
+          <span className="text-gray-500 ml-2">({account.currency})</span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => startEdit(account)}
+            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => handleDeleteAccount(account.id)}
+            className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    );
   };
 
   const renderCategorySection = (categories: AccountCategory[], title: string) => (
@@ -150,28 +279,7 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
               <p className="text-gray-500 text-sm italic">No accounts in this category</p>
             ) : (
               <div className="space-y-2">
-                {categoryAccounts.map(account => (
-                  <div key={account.id} className="flex items-center justify-between bg-white p-3 rounded border">
-                    <div>
-                      <span className="font-medium">{account.name}</span>
-                      <span className="text-gray-500 ml-2">({account.currency})</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => startEdit(account)}
-                        className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteAccount(account.id)}
-                        className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                {categoryAccounts.map(account => renderAccountRow(account))}
               </div>
             )}
           </div>
@@ -180,11 +288,9 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
     </div>
   );
 
-  const renderForm = () => (
+  const renderAddForm = () => (
     <div className="bg-white rounded-lg shadow p-6 mb-6">
-      <h3 className="text-lg font-semibold mb-4">
-        {editingAccount ? 'Edit Account' : 'Add New Account'}
-      </h3>
+      <h3 className="text-lg font-semibold mb-4">Add New Account</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
@@ -231,10 +337,10 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
       </div>
       <div className="flex gap-3 mt-4">
         <button
-          onClick={editingAccount ? handleEditAccount : handleAddAccount}
+          onClick={handleAddAccount}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
-          {editingAccount ? 'Update Account' : 'Add Account'}
+          Add Account
         </button>
         <button
           onClick={cancelEdit}
@@ -250,51 +356,102 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
     <div className="bg-white rounded shadow p-6 mt-4">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Account Management</h2>
-        {!showAddForm && !editingAccount && (
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-          >
-            Add Account
-          </button>
+        {!showAddForm && !editingAccountId && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            >
+              Add Account
+            </button>
+            <div className="relative" ref={moreMenuRef}>
+              <button
+                onClick={() => setShowMoreMenu(!showMoreMenu)}
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 flex items-center gap-1"
+              >
+                More
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showMoreMenu && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        handleDeleteAllPredefinedAccounts();
+                        setShowMoreMenu(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      Delete All Predefined Accounts
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleDeleteAllAccounts();
+                        setShowMoreMenu(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      Delete All Accounts ({accounts.length})
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Bulk Actions Section */}
-      {!showAddForm && !editingAccount && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-          <h3 className="text-lg font-semibold text-yellow-800 mb-3">Bulk Actions</h3>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={handleDeleteAllPredefinedAccounts}
-              className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm"
-              title="Delete all accounts with predefined names like 'Emergency Fund', 'Stock Portfolio', etc."
-            >
-              Delete All Predefined Accounts
-            </button>
-            <button
-              onClick={() => {
-                if (window.confirm(`Are you sure you want to delete ALL ${accounts.length} accounts? This action cannot be undone.`)) {
-                  onAccountsChange([]);
-                  alert(`Successfully deleted all ${accounts.length} accounts.`);
-                }
-              }}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-              title="Delete all accounts"
-            >
-              Delete All Accounts ({accounts.length})
-            </button>
-            <div className="text-sm text-yellow-700">
-              <strong>Note:</strong> These actions cannot be undone. Make sure to backup your data first.
-            </div>
-          </div>
-        </div>
+      {showAddForm && renderAddForm()}
+
+      {accounts.length === 0 ? (
+        <EmptyState
+          variant="accounts"
+          title="No Accounts Yet"
+          description="Start building your financial picture by adding your accounts. Track your assets like bank accounts, investments, and properties, as well as liabilities like loans and credit cards."
+          action={{
+            label: "Add Your First Account",
+            onClick: () => setShowAddForm(true),
+            variant: "primary"
+          }}
+          showSteps={true}
+          steps={[
+            "Add your bank accounts and cash holdings",
+            "Include investment accounts and retirement funds",
+            "Add real estate and other valuable assets",
+            "Don't forget to include loans, mortgages, and credit card debt"
+          ]}
+        />
+      ) : hasPredefinedAccounts() && accounts.filter(acc => !acc.id.startsWith('predef-')).length === 0 ? (
+        <EmptyState
+          variant="accounts"
+          title="Predefined Accounts Ready"
+          description="We've set up some common accounts to help you get started. You can edit these accounts or add your own custom accounts to build a complete picture of your finances."
+          action={{
+            label: "Add Custom Account",
+            onClick: () => setShowAddForm(true),
+            variant: "primary"
+          }}
+          secondaryAction={{
+            label: "Start Daily Entry",
+            onClick: () => window.location.href = '#entry',
+            variant: "outline"
+          }}
+          showSteps={true}
+          steps={[
+            "Review and edit the predefined accounts as needed",
+            "Add your own custom accounts for a complete financial picture",
+            "Start tracking your daily net worth with the Daily Entry tab",
+            "Monitor your progress in the Dashboard"
+          ]}
+        />
+      ) : (
+        <>
+          {renderCategorySection(assetCategories, 'Assets')}
+          {renderCategorySection(liabilityCategories, 'Liabilities')}
+        </>
       )}
-
-      {(showAddForm || editingAccount) && renderForm()}
-
-      {renderCategorySection(assetCategories, 'Assets')}
-      {renderCategorySection(liabilityCategories, 'Liabilities')}
     </div>
   );
 } 

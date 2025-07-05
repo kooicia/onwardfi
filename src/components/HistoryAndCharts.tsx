@@ -2,6 +2,7 @@ import React, { ReactElement, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { NetWorthEntry, Account } from '../types';
 import { formatCurrency, convertCurrency } from '../utils/currencyConverter';
+import EmptyState from './EmptyState';
 
 interface HistoryAndChartsProps {
   entries: NetWorthEntry[];
@@ -124,11 +125,27 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
   if (entries.length === 0) {
     return (
       <div className="bg-white rounded shadow p-6 mt-4">
-        <h2 className="text-xl font-bold mb-2">Dashboard</h2>
-        <div className="text-center py-8">
-          <p className="text-gray-500 mb-4">No net worth entries found.</p>
-          <p className="text-sm text-gray-400">Create some entries in the Daily Entry tab to see your dashboard and charts.</p>
-        </div>
+        <h2 className="text-xl font-bold mb-6">Dashboard</h2>
+        <EmptyState
+          variant="entries"
+          title="No Net Worth Data Yet"
+          description="Start tracking your financial journey by creating your first daily entry. Monitor your assets, liabilities, and net worth over time to see your progress toward financial independence."
+          action={{
+            label: "Create First Entry",
+            onClick: () => {
+              // This will be handled by the parent component to switch tabs
+              window.location.hash = '#entry';
+            },
+            variant: "primary"
+          }}
+          showSteps={true}
+          steps={[
+            "Make sure you have accounts set up first",
+            "Enter current values for all your accounts",
+            "Save your first daily entry",
+            "Come back regularly to track changes over time"
+          ]}
+        />
       </div>
     );
   }

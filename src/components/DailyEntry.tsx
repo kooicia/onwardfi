@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Account, NetWorthEntry } from '../types';
 import { convertCurrency, formatCurrency } from '../utils/currencyConverter';
+import EmptyState from './EmptyState';
 
 interface DailyEntryProps {
   accounts: Account[];
@@ -303,10 +304,18 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
 
 
       {accounts.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500 mb-4">No accounts defined yet.</p>
-          <p className="text-sm text-gray-400">Please add some accounts in the Accounts tab first.</p>
-        </div>
+        <EmptyState
+          variant="accounts"
+          title="No Accounts to Track"
+          description="You need to create some accounts first before you can track your daily net worth. Add your bank accounts, investments, loans, and other financial accounts to get started."
+          action={{
+            label: "Add Accounts",
+            onClick: () => {
+              window.location.hash = '#accounts';
+            },
+            variant: "primary"
+          }}
+        />
       ) : (
         <>
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">

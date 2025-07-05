@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import EmptyState from './EmptyState';
 
 interface FIRECalculatorProps {
   preferredCurrency: string;
@@ -87,6 +88,9 @@ export default function FIRECalculator({ preferredCurrency }: FIRECalculatorProp
   const yearsToFIRE = calculateYearsToFIRE();
   const monthlySavingsNeeded = calculateMonthlySavingsNeeded();
 
+  // Check if any data has been entered
+  const hasData = annualExpenses || currentAge || currentSavings || annualSavings || targetAge;
+
   return (
     <div className="bg-white rounded shadow p-6 mt-4">
       <h2 className="text-xl font-bold mb-6">FIRE Calculator</h2>
@@ -99,6 +103,15 @@ export default function FIRECalculator({ preferredCurrency }: FIRECalculatorProp
           It's a lifestyle movement focused on extreme savings and investment to achieve financial freedom at a young age.
         </p>
       </div>
+
+      {!hasData && (
+        <EmptyState
+          variant="calculator"
+          title="Ready to Calculate Your FIRE Number?"
+          description="Enter your financial details below to discover how much you need to save for financial independence and when you can achieve it."
+          className="mb-8"
+        />
+      )}
 
       {/* Calculator Form */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

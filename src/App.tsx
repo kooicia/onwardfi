@@ -8,6 +8,7 @@ import CurrencySelector from "./components/CurrencySelector";
 import Settings from "./components/Settings";
 import Auth from "./components/Auth";
 import FIRECalculator from "./components/FIRECalculator";
+import EmptyState from "./components/EmptyState";
 import { Account, NetWorthEntry, AccountCategory, ASSET_CATEGORIES, LIABILITY_CATEGORIES } from "./types";
 import "./App.css";
 
@@ -28,6 +29,54 @@ function App() {
   const [preferredCurrency, setPreferredCurrency] = useState<string>('USD');
   const [assetCategories, setAssetCategories] = useState<AccountCategory[]>(ASSET_CATEGORIES);
   const [liabilityCategories, setLiabilityCategories] = useState<AccountCategory[]>(LIABILITY_CATEGORIES);
+
+  // Function to create predefined accounts for new users
+  const createPredefinedAccounts = (): Account[] => {
+    return [
+      {
+        id: 'predef-cash-1',
+        name: 'Emergency Fund',
+        type: 'asset',
+        category: 'cash',
+        currency: 'USD'
+      },
+      {
+        id: 'predef-cash-2',
+        name: 'Checking Account',
+        type: 'asset',
+        category: 'cash',
+        currency: 'USD'
+      },
+      {
+        id: 'predef-stocks-1',
+        name: 'Stock Portfolio',
+        type: 'asset',
+        category: 'stocks',
+        currency: 'USD'
+      },
+      {
+        id: 'predef-stocks-2',
+        name: 'Retirement Account (401k/IRA)',
+        type: 'asset',
+        category: 'stocks',
+        currency: 'USD'
+      },
+      {
+        id: 'predef-mortgage-1',
+        name: 'Primary Residence Mortgage',
+        type: 'liability',
+        category: 'mortgage',
+        currency: 'USD'
+      },
+      {
+        id: 'predef-credit-1',
+        name: 'Credit Card',
+        type: 'liability',
+        category: 'credit-card-debt',
+        currency: 'USD'
+      }
+    ];
+  };
 
   // Save accounts to localStorage whenever they change
   useEffect(() => {
@@ -133,7 +182,11 @@ function App() {
       if (savedAccounts) {
         setAccounts(JSON.parse(savedAccounts));
       } else {
-        setAccounts([]); // Start with empty accounts for new user
+        // Create predefined accounts for new users
+        const predefinedAccounts = createPredefinedAccounts();
+        setAccounts(predefinedAccounts);
+        // Save the predefined accounts to localStorage
+        localStorage.setItem(`fireAccounts_${userId}`, JSON.stringify(predefinedAccounts));
       }
       
       if (savedEntries) {
@@ -370,6 +423,34 @@ function App() {
         <button className={`px-3 py-1 rounded ${page === "firecalculator" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("firecalculator")}>FIRE Calculator</button>
       </nav>
       <main className="p-4 max-w-6xl mx-auto">
+        {/* Welcome state for new users */}
+        {accounts.length > 0 && entries.length === 0 && page === "history" && (
+          <div className="bg-white rounded shadow p-6 mt-4">
+            <EmptyState
+              variant="welcome"
+              title="Welcome to Your FIRE Journey!"
+              description="We've set up some common accounts to help you get started. Add your first daily entry to begin tracking your path to financial independence."
+              action={{
+                label: "Add Your First Daily Entry",
+                onClick: () => setPage("entry"),
+                variant: "primary"
+              }}
+              secondaryAction={{
+                label: "Learn About FIRE",
+                onClick: () => setPage("firecalculator"),
+                variant: "outline"
+              }}
+              showSteps={true}
+              steps={[
+                "We've created common accounts like Emergency Fund, Checking Account, and Credit Card",
+                "Add your first daily entry with current account balances",
+                "Monitor your progress with charts and trends",
+                "Use the FIRE calculator to set your financial independence goals"
+              ]}
+            />
+          </div>
+        )}
+
         {page === "entry" && (
           <DailyEntry 
             accounts={accounts}
@@ -418,11 +499,11 @@ function App() {
             onCurrencyChange={setPreferredCurrency}
           />
         )}
-                 {page === "firecalculator" && (
-           <FIRECalculator
-             preferredCurrency={preferredCurrency}
-           />
-         )}
+        {page === "firecalculator" && (
+          <FIRECalculator
+            preferredCurrency={preferredCurrency}
+          />
+        )}
       </main>
     </div>
   );
