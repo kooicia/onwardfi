@@ -9,6 +9,7 @@ interface SettingsProps {
   onCategoriesChange: (assetCategories: AccountCategory[], liabilityCategories: AccountCategory[]) => void;
   preferredCurrency: string;
   onCurrencyChange: (currency: string) => void;
+  onResetToNewUser?: () => void;
 }
 
 export default function Settings({ 
@@ -16,7 +17,8 @@ export default function Settings({
   liabilityCategories, 
   onCategoriesChange,
   preferredCurrency,
-  onCurrencyChange
+  onCurrencyChange,
+  onResetToNewUser
 }: SettingsProps) {
   const [editingCategoryValue, setEditingCategoryValue] = useState<string | null>(null);
   const [editingType, setEditingType] = useState<'asset' | 'liability' | null>(null);
@@ -364,6 +366,26 @@ export default function Settings({
           <li>• You can reset to default categories at any time</li>
         </ul>
       </div>
+
+      {onResetToNewUser && (
+        <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <h3 className="text-lg font-semibold text-red-800 mb-2">Danger Zone</h3>
+          <p className="text-sm text-red-700 mb-3">
+            This action will clear all your data and reset you to a new user with predefined accounts. 
+            This cannot be undone.
+          </p>
+          <button
+            onClick={() => {
+              if (window.confirm('This will clear all your data and reset you to a new user with predefined accounts. This action cannot be undone. Continue?')) {
+                onResetToNewUser();
+              }
+            }}
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+          >
+            Reset to New User
+          </button>
+        </div>
+      )}
     </div>
   );
 } 
