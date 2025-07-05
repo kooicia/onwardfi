@@ -446,13 +446,76 @@ function App() {
         </div>
       </header>
       <nav className="flex gap-4 bg-blue-50 px-4 py-2">
-        <button className={`px-3 py-1 rounded ${page === "history" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("history")}>Dashboard</button>
-        <button className={`px-3 py-1 rounded ${page === "entry" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("entry")}>Daily Entry</button>
-        <button className={`px-3 py-1 rounded ${page === "accounts" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("accounts")}>Accounts</button>
-        <button className={`px-3 py-1 rounded ${page === "data" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("data")}>Data Management</button>
-        <button className={`px-3 py-1 rounded ${page === "importexport" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("importexport")}>Import/Export</button>
-        <button className={`px-3 py-1 rounded ${page === "settings" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("settings")}>Settings</button>
-        <button className={`px-3 py-1 rounded ${page === "firecalculator" ? "bg-blue-600 text-white" : "bg-white text-blue-700"}`} onClick={() => setPage("firecalculator")}>FIRE Calculator</button>
+        <button 
+          className={`px-3 py-1 rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md ${
+            page === "history" 
+              ? "bg-blue-600 text-white shadow-md" 
+              : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+          }`} 
+          onClick={() => setPage("history")}
+        >
+          Dashboard
+        </button>
+        <button 
+          className={`px-3 py-1 rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md ${
+            page === "entry" 
+              ? "bg-blue-600 text-white shadow-md" 
+              : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+          }`} 
+          onClick={() => setPage("entry")}
+        >
+          Daily Entry
+        </button>
+        <button 
+          className={`px-3 py-1 rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md ${
+            page === "accounts" 
+              ? "bg-blue-600 text-white shadow-md" 
+              : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+          }`} 
+          onClick={() => setPage("accounts")}
+        >
+          Accounts
+        </button>
+        <button 
+          className={`px-3 py-1 rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md ${
+            page === "data" 
+              ? "bg-blue-600 text-white shadow-md" 
+              : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+          }`} 
+          onClick={() => setPage("data")}
+        >
+          Data Management
+        </button>
+        <button 
+          className={`px-3 py-1 rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md ${
+            page === "importexport" 
+              ? "bg-blue-600 text-white shadow-md" 
+              : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+          }`} 
+          onClick={() => setPage("importexport")}
+        >
+          Import/Export
+        </button>
+        <button 
+          className={`px-3 py-1 rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md ${
+            page === "settings" 
+              ? "bg-blue-600 text-white shadow-md" 
+              : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+          }`} 
+          onClick={() => setPage("settings")}
+        >
+          Settings
+        </button>
+        <button 
+          className={`px-3 py-1 rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md ${
+            page === "firecalculator" 
+              ? "bg-blue-600 text-white shadow-md" 
+              : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+          }`} 
+          onClick={() => setPage("firecalculator")}
+        >
+          FIRE Calculator
+        </button>
       </nav>
       <main className="p-4 max-w-6xl mx-auto">
         {/* Welcome state for new users */}
