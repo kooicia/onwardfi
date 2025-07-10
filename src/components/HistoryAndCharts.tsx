@@ -9,9 +9,10 @@ interface HistoryAndChartsProps {
   accounts: Account[];
   preferredCurrency: string;
   onUpdateEntryValue: (entryId: string, accountId: string, newValue: number) => void;
+  onCreateFirstEntry?: () => void;
 }
 
-export default function HistoryAndCharts({ entries, accounts, preferredCurrency, onUpdateEntryValue }: HistoryAndChartsProps) {
+export default function HistoryAndCharts({ entries, accounts, preferredCurrency, onUpdateEntryValue, onCreateFirstEntry }: HistoryAndChartsProps) {
   const [showOriginalCurrency, setShowOriginalCurrency] = useState(true);
   const [editingCell, setEditingCell] = useState<{ entryId: string; accountId: string; column: 'original' | 'usd' } | null>(null);
   const [editValue, setEditValue] = useState<string>('');
@@ -132,10 +133,7 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
           description="Start tracking your financial journey by creating your first daily entry. Monitor your assets, liabilities, and net worth over time to see your progress toward financial independence."
           action={{
             label: "Create First Entry",
-            onClick: () => {
-              // This will be handled by the parent component to switch tabs
-              window.location.hash = '#entry';
-            },
+            onClick: onCreateFirstEntry || (() => {}),
             variant: "primary"
           }}
           showSteps={true}

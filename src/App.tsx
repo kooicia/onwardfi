@@ -29,6 +29,7 @@ function App() {
   const [preferredCurrency, setPreferredCurrency] = useState<string>('USD');
   const [assetCategories, setAssetCategories] = useState<AccountCategory[]>(ASSET_CATEGORIES);
   const [liabilityCategories, setLiabilityCategories] = useState<AccountCategory[]>(LIABILITY_CATEGORIES);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'categories' | 'accounts' | 'importexport' | 'danger'>('general');
 
   // Function to create predefined accounts for new users
   const createPredefinedAccounts = (): Account[] => {
@@ -139,6 +140,20 @@ function App() {
         setLiabilityCategories(JSON.parse(savedLiabilityCategories));
       }
     }
+  }, []);
+
+  // Handle hash-based navigation for Settings subtabs
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#settings-accounts') {
+        setPage('settings');
+        setSettingsInitialTab('accounts');
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    // Check on mount
+    handleHashChange();
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   const handleLogin = async (email: string, password: string) => {
@@ -395,7 +410,7 @@ function App() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white p-4 sm:p-8 rounded-lg shadow-md max-w-md w-full">
           <h1 className="text-lg sm:text-xl font-bold text-center mb-6 text-blue-700">
-            FIRE Net Worth Tracker
+            OnwardFI
           </h1>
           <Auth
             onLogin={handleLogin}
@@ -414,7 +429,7 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow p-1">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
-          <div className="font-bold text-lg sm:text-xl text-blue-700">FIRE Net Worth Tracker</div>
+          <div className="font-bold text-lg sm:text-xl text-blue-700">OnwardFI</div>
           <div className="flex items-center gap-1">
             <Auth
               onLogin={handleLogin}
@@ -450,16 +465,6 @@ function App() {
         </button>
         <button 
           className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
-            page === "accounts" 
-              ? "bg-blue-600 text-white shadow-md" 
-              : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
-          }`} 
-          onClick={() => setPage("accounts")}
-        >
-          Accounts
-        </button>
-        <button 
-          className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
             page === "data" 
               ? "bg-blue-600 text-white shadow-md" 
               : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
@@ -467,16 +472,6 @@ function App() {
           onClick={() => setPage("data")}
         >
           Data Management
-        </button>
-        <button 
-          className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
-            page === "importexport" 
-              ? "bg-blue-600 text-white shadow-md" 
-              : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
-          }`} 
-          onClick={() => setPage("importexport")}
-        >
-          Import/Export
         </button>
         <button 
           className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
@@ -500,48 +495,16 @@ function App() {
         </button>
       </nav>
       <main className="p-2 sm:p-4 max-w-6xl mx-auto">
-        {/* Welcome state for new users */}
-        {accounts.length > 0 && entries.length === 0 && page === "history" && (
-          <div className="bg-white rounded shadow p-6 mt-4">
-            <EmptyState
-              variant="welcome"
-              title="Welcome to Your FIRE Journey!"
-              description="We've set up some common accounts to help you get started. Add your first daily entry to begin tracking your path to financial independence."
-              action={{
-                label: "Add Your First Daily Entry",
-                onClick: () => setPage("entry"),
-                variant: "primary"
-              }}
-              secondaryAction={{
-                label: "Learn About FIRE",
-                onClick: () => setPage("firecalculator"),
-                variant: "outline"
-              }}
-              showSteps={true}
-              steps={[
-                "We've created common accounts like Emergency Fund, Checking Account, and Credit Card",
-                "Add your first daily entry with current account balances",
-                "Monitor your progress with charts and trends",
-                "Use the FIRE calculator to set your financial independence goals"
-              ]}
-            />
-          </div>
-        )}
-
         {page === "entry" && (
           <DailyEntry 
             accounts={accounts}
             entries={entries}
             onEntriesChange={setEntries}
             preferredCurrency={preferredCurrency}
-          />
-        )}
-        {page === "accounts" && (
-          <AccountManagement 
-            accounts={accounts} 
-            onAccountsChange={setAccounts}
-            assetCategories={assetCategories}
-            liabilityCategories={liabilityCategories}
+            onEditAccounts={() => {
+              setPage('settings');
+              setSettingsInitialTab('accounts');
+            }}
           />
         )}
         {page === "history" && (
@@ -550,6 +513,7 @@ function App() {
             accounts={accounts}
             preferredCurrency={preferredCurrency}
             onUpdateEntryValue={handleUpdateEntryValue}
+            onCreateFirstEntry={() => setPage('entry')}
           />
         )}
         {page === "data" && (
@@ -557,14 +521,7 @@ function App() {
             entries={entries}
             onClearEntries={handleClearEntries}
             onClearAllData={handleClearAllData}
-          />
-        )}
-        {page === "importexport" && (
-          <DataImportExport
-            accounts={accounts}
-            entries={entries}
-            onImportData={handleImportData}
-            preferredCurrency={preferredCurrency}
+            onCreateFirstEntry={() => setPage('entry')}
           />
         )}
         {page === "settings" && (
@@ -575,6 +532,11 @@ function App() {
             preferredCurrency={preferredCurrency}
             onCurrencyChange={setPreferredCurrency}
             onResetToNewUser={handleResetToNewUser}
+            accounts={accounts}
+            onAccountsChange={setAccounts}
+            entries={entries}
+            onImportData={handleImportData}
+            initialTab={settingsInitialTab}
           />
         )}
         {page === "firecalculator" && (

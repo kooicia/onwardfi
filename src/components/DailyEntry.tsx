@@ -8,13 +8,23 @@ interface DailyEntryProps {
   entries: NetWorthEntry[];
   onEntriesChange: (entries: NetWorthEntry[]) => void;
   preferredCurrency: string;
+  onEditAccounts?: () => void;
 }
 
-export default function DailyEntry({ accounts, entries, onEntriesChange, preferredCurrency }: DailyEntryProps) {
+export default function DailyEntry({ accounts, entries, onEntriesChange, preferredCurrency, onEditAccounts }: DailyEntryProps) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [accountValues, setAccountValues] = useState<{ [accountId: string]: number }>({});
   const [inputValues, setInputValues] = useState<{ [accountId: string]: string }>({});
   const [editingEntry, setEditingEntry] = useState<NetWorthEntry | null>(null);
+
+  // Shortcut to go to Settings > Accounts
+  const handleGoToAccounts = () => {
+    if (onEditAccounts) {
+      onEditAccounts();
+    } else {
+      window.location.hash = '#settings-accounts';
+    }
+  };
 
   // Get existing entry for selected date
   const existingEntry = entries.find(entry => entry.date === selectedDate);
@@ -329,73 +339,15 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
 
   return (
     <div className="bg-white rounded shadow p-4 sm:p-6 mt-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
         <h2 className="text-lg sm:text-xl font-bold">Daily Net Worth Entry</h2>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <div className="flex items-center justify-center sm:justify-start gap-1 sm:gap-2">
-            <button
-              onClick={() => {
-                // Find the closest previous entry date
-                const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-                const previousEntry = sortedEntries
-                  .filter(entry => entry.date < selectedDate)
-                  .pop();
-                
-                if (previousEntry) {
-                  setSelectedDate(previousEntry.date);
-                }
-              }}
-              disabled={entries.filter(entry => entry.date < selectedDate).length === 0}
-              className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed min-w-[32px]"
-              title="Previous Entry"
-            >
-              ←
-            </button>
-            <button
-              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
-              className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 min-w-[50px]"
-              title="Today"
-            >
-              Today
-            </button>
-            <button
-              onClick={() => {
-                // Find the closest next entry date
-                const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-                const nextEntry = sortedEntries
-                  .filter(entry => entry.date > selectedDate)
-                  .shift();
-                
-                if (nextEntry) {
-                  setSelectedDate(nextEntry.date);
-                }
-              }}
-              disabled={entries.filter(entry => entry.date > selectedDate).length === 0}
-              className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed min-w-[32px]"
-              title="Next Entry"
-            >
-              →
-            </button>
-          </div>
-          <div className="flex gap-2">
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 sm:flex-none"
-            />
-            {editingEntry && (
-              <button
-                onClick={handleDelete}
-                className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm whitespace-nowrap"
-              >
-                Delete
-              </button>
-            )}
-          </div>
-        </div>
+        <button
+          onClick={handleGoToAccounts}
+          className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 border border-blue-200"
+        >
+          Edit/Configure Accounts
+        </button>
       </div>
-
 
 
       {accounts.length === 0 ? (

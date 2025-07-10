@@ -6,9 +6,10 @@ interface DataManagementProps {
   entries: NetWorthEntry[];
   onClearEntries: (entryIds: string[]) => void;
   onClearAllData: () => void;
+  onCreateFirstEntry?: () => void;
 }
 
-export default function DataManagement({ entries, onClearEntries, onClearAllData }: DataManagementProps) {
+export default function DataManagement({ entries, onClearEntries, onClearAllData, onCreateFirstEntry }: DataManagementProps) {
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [showConfirmClearAll, setShowConfirmClearAll] = useState(false);
@@ -79,9 +80,7 @@ export default function DataManagement({ entries, onClearEntries, onClearAllData
           description="You haven't created any net worth entries yet. Start tracking your daily financial data to see it appear here for management and analysis."
           action={{
             label: "Create First Entry",
-            onClick: () => {
-              window.location.hash = '#entry';
-            },
+            onClick: onCreateFirstEntry || (() => {}),
             variant: "primary"
           }}
         />

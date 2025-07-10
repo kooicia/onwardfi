@@ -104,15 +104,6 @@ export default function FIRECalculator({ preferredCurrency }: FIRECalculatorProp
         </p>
       </div>
 
-      {!hasData && (
-        <EmptyState
-          variant="calculator"
-          title="Ready to Calculate Your FIRE Number?"
-          description="Enter your financial details below to discover how much you need to save for financial independence and when you can achieve it."
-          className="mb-8"
-        />
-      )}
-
       {/* Calculator Form */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <div>

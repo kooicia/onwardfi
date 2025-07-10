@@ -20,6 +20,7 @@ export default function DataImportExport({ accounts, entries, onImportData, pref
   const [importStatus, setImportStatus] = useState<'idle' | 'importing' | 'success' | 'error'>('idle');
   const [importMessage, setImportMessage] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [showExportPreview, setShowExportPreview] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -335,6 +336,36 @@ export default function DataImportExport({ accounts, entries, onImportData, pref
     URL.revokeObjectURL(url);
   };
 
+  // Add this function to generate CSV from current data
+  const handleExportCSV = () => {
+    if (!accounts.length || !entries.length) return;
+    // Collect all unique dates from entries
+    const allDates = Array.from(new Set(entries.map(e => e.date))).sort();
+    // Header: account_name,type,category,currency,<date1>,<date2>,...
+    const header = ['account_name','type','category','currency',...allDates];
+    // Build rows for each account
+    const rows = accounts.map(account => {
+      const row = [account.name, account.type, account.category, account.currency];
+      allDates.forEach(date => {
+        // Find entry for this date
+        const entry = entries.find(e => e.date === date);
+        // Get value for this account in this entry
+        row.push(entry && entry.accountValues[account.id] !== undefined ? String(entry.accountValues[account.id]) : '');
+      });
+      return row.join(',');
+    });
+    const csvContent = header.join(',') + '\n' + rows.join('\n');
+    const dataBlob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `net-worth-data-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleDownloadSample = (format: 'json' | 'csv') => {
     if (format === 'json') {
       const sampleData = generateSampleData();
@@ -541,6 +572,44 @@ export default function DataImportExport({ accounts, entries, onImportData, pref
           >
             Export Data
           </button>
+          <button
+            onClick={handleExportCSV}
+            className="mt-2 w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            Export as CSV
+          </button>
+          {/* CSV Preview */}
+          <div className="mt-4 p-3 bg-gray-50 rounded">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-medium text-gray-700">CSV Preview:</span>
+              <button
+                onClick={() => setShowExportPreview(v => !v)}
+                className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors ml-2"
+              >
+                {showExportPreview ? 'Hide Preview' : 'Show Preview'}
+              </button>
+            </div>
+            {showExportPreview && (
+              <pre className="text-xs bg-white p-2 rounded border overflow-x-auto max-h-32">
+                {(() => {
+                  if (!accounts.length || !entries.length) return 'No data to preview.';
+                  // Collect all unique dates from entries
+                  const allDates = Array.from(new Set(entries.map(e => e.date))).sort();
+                  const header = ['account_name','type','category','currency',...allDates];
+                  const rows = accounts.map(account => {
+                    const row = [account.name, account.type, account.category, account.currency];
+                    allDates.forEach(date => {
+                      const entry = entries.find(e => e.date === date);
+                      row.push(entry && entry.accountValues[account.id] !== undefined ? String(entry.accountValues[account.id]) : '');
+                    });
+                    return row;
+                  });
+                  const previewRows = rows.slice(0, 5); // Show only first 5 rows
+                  return [header, ...previewRows].map(r => r.join(',')).join('\n') + (rows.length > 5 ? `\n... (${rows.length - 5} more rows)` : '');
+                })()}
+              </pre>
+            )}
+          </div>
         </div>
 
         {/* Import Section */}

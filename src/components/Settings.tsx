@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { AccountCategory, ASSET_CATEGORIES, LIABILITY_CATEGORIES } from '../types';
 import CurrencySelector from './CurrencySelector';
 import EmptyState from './EmptyState';
+import AccountManagement from './AccountManagement';
+import { Account, NetWorthEntry } from '../types';
+import DataImportExport from './DataImportExport';
 
 interface SettingsProps {
   assetCategories: AccountCategory[];
@@ -10,6 +13,11 @@ interface SettingsProps {
   preferredCurrency: string;
   onCurrencyChange: (currency: string) => void;
   onResetToNewUser?: () => void;
+  accounts: Account[];
+  onAccountsChange: (accounts: Account[]) => void;
+  entries: NetWorthEntry[];
+  onImportData: (accounts: Account[], entries: NetWorthEntry[]) => void;
+  initialTab?: 'general' | 'categories' | 'accounts' | 'importexport' | 'danger';
 }
 
 export default function Settings({ 
@@ -18,7 +26,12 @@ export default function Settings({
   onCategoriesChange,
   preferredCurrency,
   onCurrencyChange,
-  onResetToNewUser
+  onResetToNewUser,
+  accounts,
+  onAccountsChange,
+  entries,
+  onImportData,
+  initialTab
 }: SettingsProps) {
   const [editingCategoryValue, setEditingCategoryValue] = useState<string | null>(null);
   const [editingType, setEditingType] = useState<'asset' | 'liability' | null>(null);
@@ -26,6 +39,12 @@ export default function Settings({
     value: '',
     label: ''
   });
+  const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'accounts' | 'importexport' | 'danger'>(initialTab || 'general');
+  React.useEffect(() => {
+    if (initialTab && initialTab !== activeTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   const handleAddCategory = (type: 'asset' | 'liability') => {
     if (!formData.value || !formData.label) return;
@@ -297,51 +316,109 @@ export default function Settings({
 
   return (
     <div className="bg-white rounded shadow p-4 sm:p-6 mt-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-4">
-        <h2 className="text-lg sm:text-xl font-bold">Settings</h2>
-        {!editingCategoryValue && !editingType && (
+      {/* Tab Bar */}
+      <div className="flex border-b mb-6 gap-2">
+        <button
+          className={`px-4 py-2 -mb-px border-b-2 font-medium transition-colors ${activeTab === 'general' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-blue-700'}`}
+          onClick={() => setActiveTab('general')}
+        >
+          General
+        </button>
+        <button
+          className={`px-4 py-2 -mb-px border-b-2 font-medium transition-colors ${activeTab === 'categories' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-blue-700'}`}
+          onClick={() => setActiveTab('categories')}
+        >
+          Categories
+        </button>
+        <button
+          className={`px-4 py-2 -mb-px border-b-2 font-medium transition-colors ${activeTab === 'accounts' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-blue-700'}`}
+          onClick={() => setActiveTab('accounts')}
+        >
+          Accounts
+        </button>
+        <button
+          className={`px-4 py-2 -mb-px border-b-2 font-medium transition-colors ${activeTab === 'importexport' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-blue-700'}`}
+          onClick={() => setActiveTab('importexport')}
+        >
+          Import/Export
+        </button>
+        {onResetToNewUser && (
           <button
-            onClick={resetToDefaults}
-            className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
+            className={`px-4 py-2 -mb-px border-b-2 font-medium transition-colors ${activeTab === 'danger' ? 'border-red-600 text-red-700' : 'border-transparent text-gray-500 hover:text-red-700'}`}
+            onClick={() => setActiveTab('danger')}
           >
-            Reset to Defaults
+            Danger Zone
           </button>
         )}
       </div>
 
-      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h3 className="text-lg font-semibold text-blue-800 mb-2">Account Categories</h3>
-        <p className="text-sm text-blue-700 mb-2">
-          Configure the categories available for creating accounts. Categories are used to group similar accounts together.
-        </p>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Currency for Totals</label>
-          <div className="max-w-xs">
-            <CurrencySelector
-              selectedCurrency={preferredCurrency}
-              onCurrencyChange={onCurrencyChange}
-            />
+      {/* Tab Content */}
+      {activeTab === 'general' && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="text-lg font-semibold text-blue-800 mb-2">General Settings</h3>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Currency for Totals</label>
+            <div className="max-w-xs">
+              <CurrencySelector
+                selectedCurrency={preferredCurrency}
+                onCurrencyChange={onCurrencyChange}
+              />
+            </div>
+            <p className="text-xs text-gray-600 mt-1">This currency will be used to display all totals and net worth. All account values will be converted to this currency for summary calculations.</p>
           </div>
-          <p className="text-xs text-gray-600 mt-1">This currency will be used to display all totals and net worth. All account values will be converted to this currency for summary calculations.</p>
         </div>
-      </div>
+      )}
 
-      {editingType && renderAddForm()}
+      {activeTab === 'categories' && (
+        <>
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 className="text-lg font-semibold text-blue-800 mb-2">Account Categories</h3>
+            <p className="text-sm text-blue-700 mb-2">
+              Configure the categories available for creating accounts. Categories are used to group similar accounts together.
+            </p>
+            {!editingCategoryValue && !editingType && (
+              <button
+                onClick={resetToDefaults}
+                className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 mb-4"
+              >
+                Reset to Defaults
+              </button>
+            )}
+          </div>
+          {editingType && renderAddForm()}
+          {renderCategorySection(assetCategories, 'Asset Categories', 'asset')}
+          {renderCategorySection(liabilityCategories, 'Liability Categories', 'liability')}
+          <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <h3 className="text-lg font-semibold text-yellow-800 mb-2">Important Notes</h3>
+            <ul className="text-sm text-yellow-700 space-y-1">
+              <li>• Category values are used internally and should be unique</li>
+              <li>• Display names are what users see when creating accounts</li>
+              <li>• Deleting a category may affect existing accounts using that category</li>
+              <li>• You can reset to default categories at any time</li>
+            </ul>
+          </div>
+        </>
+      )}
 
-      {renderCategorySection(assetCategories, 'Asset Categories', 'asset')}
-      {renderCategorySection(liabilityCategories, 'Liability Categories', 'liability')}
+      {activeTab === 'accounts' && (
+        <AccountManagement
+          accounts={accounts}
+          onAccountsChange={onAccountsChange}
+          assetCategories={assetCategories}
+          liabilityCategories={liabilityCategories}
+        />
+      )}
 
-      <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <h3 className="text-lg font-semibold text-yellow-800 mb-2">Important Notes</h3>
-        <ul className="text-sm text-yellow-700 space-y-1">
-          <li>• Category values are used internally and should be unique</li>
-          <li>• Display names are what users see when creating accounts</li>
-          <li>• Deleting a category may affect existing accounts using that category</li>
-          <li>• You can reset to default categories at any time</li>
-        </ul>
-      </div>
+      {activeTab === 'importexport' && (
+        <DataImportExport
+          accounts={accounts}
+          entries={entries}
+          onImportData={onImportData}
+          preferredCurrency={preferredCurrency}
+        />
+      )}
 
-      {onResetToNewUser && (
+      {activeTab === 'danger' && onResetToNewUser && (
         <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg">
           <h3 className="text-lg font-semibold text-red-800 mb-2">Danger Zone</h3>
           <p className="text-sm text-red-700 mb-3">
