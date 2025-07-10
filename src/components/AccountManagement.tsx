@@ -146,10 +146,6 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
     return accounts.filter(acc => acc.category === categoryValue);
   };
 
-  const hasPredefinedAccounts = () => {
-    return accounts.some(acc => acc.id.startsWith('predef-'));
-  };
-
   const renderAccountRow = (account: Account) => {
     const isEditing = editingAccountId === account.id;
     

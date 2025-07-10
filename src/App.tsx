@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from "react";
-import AccountManagement from "./components/AccountManagement";
-import DailyEntry from "./components/DailyEntry";
 import HistoryAndCharts from "./components/HistoryAndCharts";
 import DataManagement from "./components/DataManagement";
-import DataImportExport from "./components/DataImportExport";
-import CurrencySelector from "./components/CurrencySelector";
 import Settings from "./components/Settings";
 import Auth from "./components/Auth";
 import FIRECalculator from "./components/FIRECalculator";
-import EmptyState from "./components/EmptyState";
+import DailyEntry from "./components/DailyEntry";
 import { Account, NetWorthEntry, AccountCategory, ASSET_CATEGORIES, LIABILITY_CATEGORIES } from "./types";
 import "./App.css";
+import LanguageSelector from "./components/LanguageSelector";
+import { useTranslation } from "react-i18next";
 
 
 // import { auth } from "./firebase";
@@ -22,7 +20,7 @@ function App() {
   const [userEmail, setUserEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState('');
-  const [page, setPage] = useState("history");
+  const [page, setPage] = useState("history"); // 'history' is Dashboard
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [entries, setEntries] = useState<NetWorthEntry[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>('');
@@ -30,6 +28,7 @@ function App() {
   const [assetCategories, setAssetCategories] = useState<AccountCategory[]>(ASSET_CATEGORIES);
   const [liabilityCategories, setLiabilityCategories] = useState<AccountCategory[]>(LIABILITY_CATEGORIES);
   const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'categories' | 'accounts' | 'importexport' | 'danger'>('general');
+  const { t } = useTranslation();
 
   // Function to create predefined accounts for new users
   const createPredefinedAccounts = (): Account[] => {
@@ -410,7 +409,7 @@ function App() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white p-4 sm:p-8 rounded-lg shadow-md max-w-md w-full">
           <h1 className="text-lg sm:text-xl font-bold text-center mb-6 text-blue-700">
-            OnwardFI
+            {t('appName')}
           </h1>
           <Auth
             onLogin={handleLogin}
@@ -429,8 +428,9 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow p-1">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
-          <div className="font-bold text-lg sm:text-xl text-blue-700">OnwardFI</div>
-          <div className="flex items-center gap-1">
+          <div className="font-bold text-lg sm:text-xl text-blue-700">{t('appName')}</div>
+          <div className="flex items-center gap-2">
+            <LanguageSelector />
             <Auth
               onLogin={handleLogin}
               onLogout={handleLogout}
@@ -451,7 +451,7 @@ function App() {
           }`} 
           onClick={() => setPage("history")}
         >
-          Dashboard
+          {t('dashboard')}
         </button>
         <button 
           className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
@@ -461,7 +461,7 @@ function App() {
           }`} 
           onClick={() => setPage("entry")}
         >
-          Daily Entry
+          {t('dailyEntry')}
         </button>
         <button 
           className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
@@ -471,17 +471,7 @@ function App() {
           }`} 
           onClick={() => setPage("data")}
         >
-          Data Management
-        </button>
-        <button 
-          className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
-            page === "settings" 
-              ? "bg-blue-600 text-white shadow-md" 
-              : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
-          }`} 
-          onClick={() => setPage("settings")}
-        >
-          Settings
+          {t('dataManagement')}
         </button>
         <button 
           className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
@@ -491,7 +481,17 @@ function App() {
           }`} 
           onClick={() => setPage("firecalculator")}
         >
-          FIRE Calculator
+          {t('fireCalculator')}
+        </button>
+        <button 
+          className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
+            page === "settings" 
+              ? "bg-blue-600 text-white shadow-md" 
+              : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+          }`} 
+          onClick={() => setPage("settings")}
+        >
+          {t('settings')}
         </button>
       </nav>
       <main className="p-2 sm:p-4 max-w-6xl mx-auto">

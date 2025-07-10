@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { AccountCategory, ASSET_CATEGORIES, LIABILITY_CATEGORIES } from '../types';
 import CurrencySelector from './CurrencySelector';
-import EmptyState from './EmptyState';
 import AccountManagement from './AccountManagement';
 import { Account, NetWorthEntry } from '../types';
 import DataImportExport from './DataImportExport';
+import LanguageSelector from './LanguageSelector';
+import { useTranslation } from 'react-i18next';
 
 interface SettingsProps {
   assetCategories: AccountCategory[];
@@ -40,11 +41,9 @@ export default function Settings({
     label: ''
   });
   const [activeTab, setActiveTab] = useState<'general' | 'categories' | 'accounts' | 'importexport' | 'danger'>(initialTab || 'general');
-  React.useEffect(() => {
-    if (initialTab && initialTab !== activeTab) {
-      setActiveTab(initialTab);
-    }
-  }, [initialTab]);
+  const { t } = useTranslation();
+  // Remove the useEffect that syncs initialTab and activeTab
+  // Only set activeTab from initialTab on mount
 
   const handleAddCategory = (type: 'asset' | 'liability') => {
     if (!formData.value || !formData.label) return;
@@ -158,7 +157,7 @@ export default function Settings({
         <div key={category.value} className="bg-blue-50 p-3 rounded border border-blue-200">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Category Value</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">{t('categoryValue')}</label>
               <input
                 type="text"
                 value={formData.value}
@@ -168,11 +167,11 @@ export default function Settings({
                 disabled={true} // Don't allow editing the value once created
               />
               <p className="text-xs text-gray-500 mt-1">
-                Internal identifier (cannot be changed)
+                {t('internalIdentifier')}
               </p>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Display Name</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">{t('displayName')}</label>
               <input
                 type="text"
                 value={formData.label}
@@ -181,7 +180,7 @@ export default function Settings({
                 placeholder="e.g., Real Estate"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Name shown to users
+                {t('nameShownToUsers')}
               </p>
             </div>
           </div>
@@ -190,13 +189,13 @@ export default function Settings({
               onClick={() => handleEditCategory(category.value)}
               className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
             >
-              Save
+              {t('save')}
             </button>
             <button
               onClick={cancelEdit}
               className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
             >
-              Cancel
+              {t('cancel')}
             </button>
           </div>
         </div>
@@ -214,13 +213,13 @@ export default function Settings({
             onClick={() => startEdit(category)}
             className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
           >
-            Edit
+            {t('edit')}
           </button>
           <button
             onClick={() => handleDeleteCategory(category)}
             className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
           >
-            Delete
+            {t('delete')}
           </button>
         </div>
       </div>
@@ -229,10 +228,10 @@ export default function Settings({
 
   const renderAddForm = () => (
     <div className="bg-white rounded-lg shadow p-6 mb-6">
-      <h3 className="text-lg font-semibold mb-4">Add New Category</h3>
+      <h3 className="text-lg font-semibold mb-4">{t('addNewCategory')}</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Category Value</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('categoryValue')}</label>
           <input
             type="text"
             value={formData.value}
@@ -241,11 +240,11 @@ export default function Settings({
             placeholder="e.g., real-estate"
           />
           <p className="text-xs text-gray-500 mt-1">
-            This is the internal identifier (auto-converted to lowercase with hyphens)
+            {t('internalIdentifier')}
           </p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('displayName')}</label>
           <input
             type="text"
             value={formData.label}
@@ -254,19 +253,19 @@ export default function Settings({
             placeholder="e.g., Real Estate"
           />
           <p className="text-xs text-gray-500 mt-1">
-            This is the name shown to users
+            {t('nameShownToUsers')}
           </p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('type')}</label>
           <select
             value={editingType || ''}
             onChange={(e) => setEditingType(e.target.value as 'asset' | 'liability')}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">Select type</option>
-            <option value="asset">Asset</option>
-            <option value="liability">Liability</option>
+            <option value="">{t('selectType')}</option>
+            <option value="asset">{t('asset')}</option>
+            <option value="liability">{t('liability')}</option>
           </select>
         </div>
       </div>
@@ -276,13 +275,13 @@ export default function Settings({
           disabled={!formData.value || !formData.label || !editingType}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Add Category
+          {t('addCategory')}
         </button>
         <button
           onClick={cancelEdit}
           className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
         >
-          Cancel
+          {t('cancel')}
         </button>
       </div>
     </div>
@@ -300,12 +299,12 @@ export default function Settings({
             }}
             className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
           >
-            Add {type === 'asset' ? 'Asset' : 'Liability'} Category
+            {type === 'asset' ? t('addAssetCategory') : t('addLiabilityCategory')}
           </button>
         )}
       </div>
       {categories.length === 0 ? (
-        <p className="text-gray-500 italic">No {type} categories defined</p>
+        <p className="text-gray-500 italic">{t('noCategoriesDefined')}</p>
       ) : (
         <div className="space-y-2">
           {categories.map(category => renderCategoryRow(category))}
@@ -322,32 +321,32 @@ export default function Settings({
           className={`px-4 py-2 -mb-px border-b-2 font-medium transition-colors ${activeTab === 'general' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-blue-700'}`}
           onClick={() => setActiveTab('general')}
         >
-          General
+          {t('generalSettings')}
         </button>
         <button
           className={`px-4 py-2 -mb-px border-b-2 font-medium transition-colors ${activeTab === 'categories' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-blue-700'}`}
           onClick={() => setActiveTab('categories')}
         >
-          Categories
+          {t('accountCategories')}
         </button>
         <button
           className={`px-4 py-2 -mb-px border-b-2 font-medium transition-colors ${activeTab === 'accounts' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-blue-700'}`}
           onClick={() => setActiveTab('accounts')}
         >
-          Accounts
+          {t('accounts')}
         </button>
         <button
           className={`px-4 py-2 -mb-px border-b-2 font-medium transition-colors ${activeTab === 'importexport' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-blue-700'}`}
           onClick={() => setActiveTab('importexport')}
         >
-          Import/Export
+          {t('importExport')}
         </button>
         {onResetToNewUser && (
           <button
             className={`px-4 py-2 -mb-px border-b-2 font-medium transition-colors ${activeTab === 'danger' ? 'border-red-600 text-red-700' : 'border-transparent text-gray-500 hover:text-red-700'}`}
             onClick={() => setActiveTab('danger')}
           >
-            Danger Zone
+            {t('dangerZone')}
           </button>
         )}
       </div>
@@ -355,16 +354,20 @@ export default function Settings({
       {/* Tab Content */}
       {activeTab === 'general' && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="text-lg font-semibold text-blue-800 mb-2">General Settings</h3>
+          <h3 className="text-lg font-semibold text-blue-800 mb-2">{t('generalSettings')}</h3>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Currency for Totals</label>
-            <div className="max-w-xs">
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('preferredCurrency')}</label>
+            <div className="max-w-xs mb-1">
               <CurrencySelector
                 selectedCurrency={preferredCurrency}
                 onCurrencyChange={onCurrencyChange}
               />
             </div>
-            <p className="text-xs text-gray-600 mt-1">This currency will be used to display all totals and net worth. All account values will be converted to this currency for summary calculations.</p>
+            <p className="text-xs text-gray-600 mb-3">{t('currencyDescription')}</p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('language')}</label>
+            <div className="max-w-xs">
+              <LanguageSelector />
+            </div>
           </div>
         </div>
       )}
@@ -372,29 +375,28 @@ export default function Settings({
       {activeTab === 'categories' && (
         <>
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h3 className="text-lg font-semibold text-blue-800 mb-2">Account Categories</h3>
+            <h3 className="text-lg font-semibold text-blue-800 mb-2">{t('accountCategories')}</h3>
             <p className="text-sm text-blue-700 mb-2">
-              Configure the categories available for creating accounts. Categories are used to group similar accounts together.
+              {t('importantNotes')}
             </p>
             {!editingCategoryValue && !editingType && (
               <button
                 onClick={resetToDefaults}
                 className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 mb-4"
               >
-                Reset to Defaults
+                {t('resetToDefaults')}
               </button>
             )}
           </div>
           {editingType && renderAddForm()}
-          {renderCategorySection(assetCategories, 'Asset Categories', 'asset')}
-          {renderCategorySection(liabilityCategories, 'Liability Categories', 'liability')}
+          {renderCategorySection(assetCategories, t('assetCategories'), 'asset')}
+          {renderCategorySection(liabilityCategories, t('liabilityCategories'), 'liability')}
           <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h3 className="text-lg font-semibold text-yellow-800 mb-2">Important Notes</h3>
+            <h3 className="text-lg font-semibold text-yellow-800 mb-2">{t('importantNotes')}</h3>
             <ul className="text-sm text-yellow-700 space-y-1">
-              <li>• Category values are used internally and should be unique</li>
-              <li>• Display names are what users see when creating accounts</li>
-              <li>• Deleting a category may affect existing accounts using that category</li>
-              <li>• You can reset to default categories at any time</li>
+              <li>• {t('internalIdentifier')}</li>
+              <li>• {t('nameShownToUsers')}</li>
+              <li>• {t('resetCategoriesConfirm')}</li>
             </ul>
           </div>
         </>

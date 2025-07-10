@@ -547,7 +547,6 @@ export default function DataImportExport({ accounts, entries, onImportData, pref
     }
   };
 
-  const sampleData = generateSampleData();
   const sampleCSV = generateSampleCSV();
 
   return (
@@ -659,7 +658,7 @@ export default function DataImportExport({ accounts, entries, onImportData, pref
                 <div>
                   <div className="text-xs text-gray-600 mb-1">JSON format:</div>
                   <pre className="text-xs bg-white p-2 rounded border overflow-x-auto max-h-32">
-{JSON.stringify(sampleData, null, 2)}
+{JSON.stringify(generateSampleData(), null, 2)}
                   </pre>
                 </div>
                 <div>

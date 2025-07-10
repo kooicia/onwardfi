@@ -64,12 +64,12 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
       let newValue: number;
       
       // Check if the input contains mathematical operators
-      if (/[\+\-\*\/\(\)]/.test(editValue)) {
+      if (/[+\-*/().]/.test(editValue)) {
         try {
           // Safely evaluate the mathematical expression
           // Only allow basic math operations and numbers
           const sanitizedExpression = editValue.replace(/[^0-9\+\-\*\/\(\)\.]/g, '');
-          newValue = eval(sanitizedExpression);
+          newValue = new Function('return ' + sanitizedExpression)();
           
           if (typeof newValue !== 'number' || isNaN(newValue) || !isFinite(newValue)) {
             alert('Invalid mathematical expression. Please enter a valid calculation.');

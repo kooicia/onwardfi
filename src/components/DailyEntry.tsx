@@ -12,7 +12,6 @@ interface DailyEntryProps {
 }
 
 export default function DailyEntry({ accounts, entries, onEntriesChange, preferredCurrency, onEditAccounts }: DailyEntryProps) {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [accountValues, setAccountValues] = useState<{ [accountId: string]: number }>({});
   const [inputValues, setInputValues] = useState<{ [accountId: string]: string }>({});
   const [editingEntry, setEditingEntry] = useState<NetWorthEntry | null>(null);
@@ -27,7 +26,7 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
   };
 
   // Get existing entry for selected date
-  const existingEntry = entries.find(entry => entry.date === selectedDate);
+  const existingEntry = entries.find(entry => entry.date === new Date().toISOString().split('T')[0]);
 
   // Initialize form with existing data or empty values
   React.useEffect(() => {
@@ -55,7 +54,7 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
       setInputValues(initialInputValues);
       setEditingEntry(null);
     }
-  }, [selectedDate, existingEntry, accounts]);
+  }, [existingEntry, accounts]);
 
   const handleAccountValueChange = (accountId: string, value: string) => {
     // Update the input display value
@@ -69,12 +68,12 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
     let numValue: number;
     
     // Check if the input contains mathematical operators
-    if (/[\+\-\*\/\(\)]/.test(value)) {
+    if (/[+\-*/().]/.test(value)) {
       try {
         // Safely evaluate the mathematical expression
         // Only allow basic math operations and numbers
         const sanitizedExpression = value.replace(/[^0-9\+\-\*\/\(\)\.]/g, '');
-        numValue = eval(sanitizedExpression);
+        numValue = Function(`"use strict"; return (${sanitizedExpression})`)();
         
         if (typeof numValue !== 'number' || isNaN(numValue) || !isFinite(numValue)) {
           // If calculation fails, keep the current value
@@ -128,7 +127,7 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
 
     const newEntry: NetWorthEntry = {
       id: editingEntry?.id || Date.now().toString(),
-      date: selectedDate,
+      date: new Date().toISOString().split('T')[0],
       accountValues: { ...accountValues },
       totalAssets,
       totalLiabilities,
@@ -147,20 +146,6 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
     }
 
     onEntriesChange(updatedEntries);
-  };
-
-  const handleDelete = () => {
-    if (!editingEntry) return;
-    
-    const confirmed = window.confirm(
-      `Are you sure you want to delete the entry for ${new Date(editingEntry.date).toLocaleDateString()}?\n\nThis action cannot be undone.`
-    );
-    
-    if (confirmed) {
-      const updatedEntries = entries.filter(entry => entry.id !== editingEntry.id);
-      onEntriesChange(updatedEntries);
-      setEditingEntry(null);
-    }
   };
 
   const getAccountsByType = (type: 'asset' | 'liability') => {
@@ -185,7 +170,7 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
   const getPreviousValue = (accountId: string) => {
     const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
     const previousEntry = sortedEntries
-      .filter(entry => entry.date < selectedDate)
+      .filter(entry => entry.date < new Date().toISOString().split('T')[0])
       .pop();
     
     return previousEntry?.accountValues[accountId] || 0;
@@ -201,28 +186,6 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
       ...prev,
       [accountId]: previousValue.toString()
     }));
-  };
-
-  const copyAllFromPrevious = (type: 'asset' | 'liability') => {
-    const typeAccounts = getAccountsByType(type);
-    const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-    const previousEntry = sortedEntries
-      .filter(entry => entry.date < selectedDate)
-      .pop();
-    
-    if (!previousEntry) return;
-    
-    const newAccountValues = { ...accountValues };
-    const newInputValues = { ...inputValues };
-    
-    typeAccounts.forEach(account => {
-      const previousValue = previousEntry.accountValues[account.id] || 0;
-      newAccountValues[account.id] = previousValue;
-      newInputValues[account.id] = previousValue.toString();
-    });
-    
-    setAccountValues(newAccountValues);
-    setInputValues(newInputValues);
   };
 
   const { totalAssets, totalLiabilities, netWorth } = calculateTotals();

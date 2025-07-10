@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import EmptyState from './EmptyState';
 
 interface FIRECalculatorProps {
   preferredCurrency: string;
@@ -87,9 +86,6 @@ export default function FIRECalculator({ preferredCurrency }: FIRECalculatorProp
   const fireNumber = calculateFIRENumber();
   const yearsToFIRE = calculateYearsToFIRE();
   const monthlySavingsNeeded = calculateMonthlySavingsNeeded();
-
-  // Check if any data has been entered
-  const hasData = annualExpenses || currentAge || currentSavings || annualSavings || targetAge;
 
   return (
     <div className="bg-white rounded shadow p-4 sm:p-6 mt-4">
