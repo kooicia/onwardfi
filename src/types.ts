@@ -20,6 +20,8 @@ export interface NetWorthEntry {
   totalAssets: number;
   totalLiabilities: number;
   netWorth: number;
+  // Store exchange rates used for this entry to preserve historical accuracy
+  exchangeRates?: { [currencyPair: string]: number };
 }
 
 // Predefined categories as per PRD

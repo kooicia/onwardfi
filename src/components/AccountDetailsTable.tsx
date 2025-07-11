@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Table, Input, Button, Space, Typography, Checkbox } from 'antd';
 import { NetWorthEntry, Account } from '../types';
-import { formatCurrency, convertCurrency } from '../utils/currencyConverter';
+import { formatCurrency, convertCurrencySync, convertCurrencyWithEntry } from '../utils/currencyConverter';
 
 interface AccountDetailsTableProps {
   entries: NetWorthEntry[];
   accounts: Account[];
   preferredCurrency: string;
-  onUpdateEntryValue: (entryId: string, accountId: string, newValue: number) => void;
+  onUpdateEntryValue: (entryId: string, accountId: string, newValue: number) => Promise<void>;
 }
 
 export default function AccountDetailsTable({ 
@@ -20,6 +20,15 @@ export default function AccountDetailsTable({
   const [editingCell, setEditingCell] = useState<{ entryId: string; accountId: string; column: 'original' | 'usd' } | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const tableRef = useRef<HTMLDivElement>(null);
+
+  // State to store async converted values
+  const [convertedValues, setConvertedValues] = useState<{ [key: string]: string }>({});
+
+  // Helper to trigger async conversion for a cell
+  const triggerConversion = async (amount: number, from: string, to: string, date: string, cellKey: string, exchangeRates?: { [currencyPair: string]: number }) => {
+    const converted = await convertCurrencyWithEntry(amount, from, to, date, exchangeRates);
+    setConvertedValues(prev => ({ ...prev, [cellKey]: formatCurrency(converted, to) }));
+  };
 
   // Helper function to format date as yyyy/mm/dd
   const formatDate = (date: string | Date) => {
@@ -36,17 +45,15 @@ export default function AccountDetailsTable({
     setEditValue(currentValue.toFixed(2));
   };
 
-  const handleEditSave = () => {
+  const handleEditSave = async () => {
     if (editingCell && editValue !== '') {
       let newValue: number;
-      
       // Check if the input contains mathematical operators
       if (/[+\-*/().]/.test(editValue)) {
         try {
           // Safely evaluate the mathematical expression
           const sanitizedExpression = editValue.replace(/[^0-9\+\-\*\/\(\)\.]/g, '');
           newValue = new Function('return ' + sanitizedExpression)();
-          
           if (typeof newValue !== 'number' || isNaN(newValue) || !isFinite(newValue)) {
             alert('Invalid mathematical expression. Please enter a valid calculation.');
             return;
@@ -63,8 +70,7 @@ export default function AccountDetailsTable({
           return;
         }
       }
-      
-      onUpdateEntryValue(editingCell.entryId, editingCell.accountId, newValue);
+      await onUpdateEntryValue(editingCell.entryId, editingCell.accountId, newValue);
     }
     setEditingCell(null);
     setEditValue('');
@@ -168,18 +174,40 @@ export default function AccountDetailsTable({
           const value = entry.accountValues[accId] || 0;
           const account = accounts.find(acc => acc.id === accId);
           const currencyCode = account?.currency || 'USD';
-          return sum + convertCurrency(value, currencyCode, 'USD');
+          
+          // Use stored exchange rate if available, otherwise use current rate
+          const rate = entry.exchangeRates?.[`${currencyCode}-${preferredCurrency}`];
+          if (typeof rate === 'number' && isFinite(rate) && rate > 0) {
+            return sum + (value * rate);
+          } else {
+            return sum + convertCurrencySync(value, currencyCode, preferredCurrency);
+          }
         }, 0);
         
         const totalLiabilitiesUsd = liabilityAccounts.reduce((sum, accId) => {
           const value = entry.accountValues[accId] || 0;
           const account = accounts.find(acc => acc.id === accId);
           const currencyCode = account?.currency || 'USD';
-          return sum + convertCurrency(value, currencyCode, 'USD');
+          
+          // Use stored exchange rate if available, otherwise use current rate
+          const rate = entry.exchangeRates?.[`${currencyCode}-${preferredCurrency}`];
+          if (typeof rate === 'number' && isFinite(rate) && rate > 0) {
+            return sum + (value * rate);
+          } else {
+            return sum + convertCurrencySync(value, currencyCode, preferredCurrency);
+          }
         }, 0);
         
         const netWorthUsd = totalAssetsUsd - totalLiabilitiesUsd;
-        const netWorthPreferred = convertCurrency(netWorthUsd, 'USD', preferredCurrency);
+        
+        // Convert to preferred currency using stored rate if available
+        let netWorthPreferred: number;
+        const rate = entry.exchangeRates?.[`USD-${preferredCurrency}`];
+        if (typeof rate === 'number' && isFinite(rate) && rate > 0) {
+          netWorthPreferred = netWorthUsd * rate;
+        } else {
+          netWorthPreferred = convertCurrencySync(netWorthUsd, 'USD', preferredCurrency);
+        }
         
         netWorthRow[`${entry.id}-original`] = netWorthUsd === 0 ? '-' : netWorthUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         netWorthRow[`${entry.id}-preferred`] = netWorthPreferred === 0 ? '-' : formatCurrency(netWorthPreferred, preferredCurrency);
@@ -208,7 +236,14 @@ export default function AccountDetailsTable({
             const value = entry.accountValues[accId] || 0;
             const account = accounts.find(acc => acc.id === accId);
             const currencyCode = account?.currency || 'USD';
-            return sum + convertCurrency(value, currencyCode, preferredCurrency);
+            
+            // Use stored exchange rate if available, otherwise use current rate
+            const rate = entry.exchangeRates?.[`${currencyCode}-${preferredCurrency}`];
+            if (typeof rate === 'number' && isFinite(rate) && rate > 0) {
+              return sum + (value * rate);
+            } else {
+              return sum + convertCurrencySync(value, currencyCode, preferredCurrency);
+            }
           }, 0);
           
           categoryRow[`${entry.id}-original`] = '-';
@@ -231,7 +266,17 @@ export default function AccountDetailsTable({
           
           sortedEntries.forEach(entry => {
             const value = entry.accountValues[accountId] || 0;
-            const preferredValue = convertCurrency(value, account.currency, preferredCurrency);
+            // Instead of calculating preferredValue synchronously, do:
+            //   const cellKey = `${entry.id}-${accountId}`;
+            //   if (!convertedValues[cellKey]) triggerConversion(value, account.currency, preferredCurrency, entry.date, cellKey, entry.exchangeRates);
+            //   accountRow[`${entry.id}-preferred`] = convertedValues[cellKey] || '...';
+            let preferredValue: number;
+            const rate = entry.exchangeRates?.[`${account.currency}-${preferredCurrency}`];
+            if (typeof rate === 'number' && isFinite(rate) && rate > 0) {
+              preferredValue = value * rate;
+            } else {
+              preferredValue = convertCurrencySync(value, account.currency, preferredCurrency);
+            }
             
             accountRow[`${entry.id}-original`] = value === 0 ? '-' : value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             accountRow[`${entry.id}-preferred`] = preferredValue === 0 ? '-' : formatCurrency(preferredValue, preferredCurrency);
@@ -262,7 +307,14 @@ export default function AccountDetailsTable({
             const value = entry.accountValues[accId] || 0;
             const account = accounts.find(acc => acc.id === accId);
             const currencyCode = account?.currency || 'USD';
-            return sum + convertCurrency(value, currencyCode, preferredCurrency);
+            
+            // Use stored exchange rate if available, otherwise use current rate
+            const rate = entry.exchangeRates?.[`${currencyCode}-${preferredCurrency}`];
+            if (typeof rate === 'number' && isFinite(rate) && rate > 0) {
+              return sum + (value * rate);
+            } else {
+              return sum + convertCurrencySync(value, currencyCode, preferredCurrency);
+            }
           }, 0);
           
           categoryRow[`${entry.id}-original`] = '-';
@@ -281,11 +333,21 @@ export default function AccountDetailsTable({
             account: account.name,
             type: 'liability-row',
             className: 'liability-row'
-          };
+        };
           
           sortedEntries.forEach(entry => {
             const value = entry.accountValues[accountId] || 0;
-            const preferredValue = convertCurrency(value, account.currency, preferredCurrency);
+            // Instead of calculating preferredValue synchronously, do:
+            //   const cellKey = `${entry.id}-${accountId}`;
+            //   if (!convertedValues[cellKey]) triggerConversion(value, account.currency, preferredCurrency, entry.date, cellKey, entry.exchangeRates);
+            //   accountRow[`${entry.id}-preferred`] = convertedValues[cellKey] || '...';
+            let preferredValue: number;
+            const rate = entry.exchangeRates?.[`${account.currency}-${preferredCurrency}`];
+            if (typeof rate === 'number' && isFinite(rate) && rate > 0) {
+              preferredValue = value * rate;
+            } else {
+              preferredValue = convertCurrencySync(value, account.currency, preferredCurrency);
+            }
             
             accountRow[`${entry.id}-original`] = value === 0 ? '-' : value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             accountRow[`${entry.id}-preferred`] = preferredValue === 0 ? '-' : formatCurrency(preferredValue, preferredCurrency);
@@ -442,7 +504,16 @@ export default function AccountDetailsTable({
                 const account = accounts.find(acc => acc.id === accountId);
                 if (account) {
                   const value = entry.accountValues[accountId] || 0;
-                  const preferredValue = convertCurrency(value, account.currency, preferredCurrency);
+                  
+                  // Use stored exchange rate if available, otherwise use current rate
+                  let preferredValue: number;
+                  const rate = entry.exchangeRates?.[`${account.currency}-${preferredCurrency}`];
+                  if (typeof rate === 'number' && isFinite(rate) && rate > 0) {
+                    preferredValue = value * rate;
+                  } else {
+                    preferredValue = convertCurrencySync(value, account.currency, preferredCurrency);
+                  }
+                  
                   return (
                     <span 
                       className="font-mono text-sm cursor-pointer hover:bg-blue-50 px-1 rounded"
@@ -490,7 +561,16 @@ export default function AccountDetailsTable({
               const account = accounts.find(acc => acc.id === accountId);
               if (account) {
                 const value = entry.accountValues[accountId] || 0;
-                const preferredValue = convertCurrency(value, account.currency, preferredCurrency);
+                
+                // Use stored exchange rate if available, otherwise use current rate
+                let preferredValue: number;
+                const rate = entry.exchangeRates?.[`${account.currency}-${preferredCurrency}`];
+                if (typeof rate === 'number' && isFinite(rate) && rate > 0) {
+                  preferredValue = value * rate;
+                } else {
+                  preferredValue = convertCurrencySync(value, account.currency, preferredCurrency);
+                }
+                
                 return (
                   <span 
                     className="font-mono text-sm cursor-pointer hover:bg-blue-50 px-1 rounded"

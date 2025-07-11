@@ -268,38 +268,56 @@ function App() {
     window.location.reload();
   };
 
-  const handleUpdateEntryValue = (entryId: string, accountId: string, newValue: number) => {
-    const updatedEntries = entries.map(entry => {
+  // PATCHED: handleUpdateEntryValue now uses historical rates for recalculation
+  const handleUpdateEntryValue = async (entryId: string, accountId: string, newValue: number) => {
+    const { getExchangeRate, convertCurrencyWithEntry } = await import('./utils/currencyConverter');
+    const updatedEntries = await Promise.all(entries.map(async entry => {
       if (entry.id === entryId) {
         const updatedAccountValues = { ...entry.accountValues };
         updatedAccountValues[accountId] = newValue;
-        
-        // Recalculate totals
+        // Clone or initialize exchangeRates
+        let updatedExchangeRates = { ...(entry.exchangeRates || {}) };
+        const account = accounts.find(acc => acc.id === accountId);
+        if (account && account.currency !== preferredCurrency) {
+          const pair = `${account.currency}-${preferredCurrency}`;
+          // If the rate is missing or invalid, fetch and store it
+          if (!updatedExchangeRates[pair] || !isFinite(updatedExchangeRates[pair]) || updatedExchangeRates[pair] <= 0) {
+            const rate = await getExchangeRate(account.currency, preferredCurrency, entry.date);
+            updatedExchangeRates[pair] = rate;
+          }
+        }
+        // Now recalculate totals using the updated exchangeRates
         let totalAssets = 0;
         let totalLiabilities = 0;
-        
-        Object.entries(updatedAccountValues).forEach(([accId, value]) => {
-          const account = accounts.find(acc => acc.id === accId);
-          if (account) {
-            if (account.type === 'asset') {
-              totalAssets += value;
+        for (const [accId, value] of Object.entries(updatedAccountValues)) {
+          const acc = accounts.find(a => a.id === accId);
+          if (acc) {
+            const converted = await convertCurrencyWithEntry(
+              value,
+              acc.currency,
+              preferredCurrency,
+              entry.date,
+              updatedExchangeRates
+            );
+            if (acc.type === 'asset') {
+              totalAssets += converted;
             } else {
-              totalLiabilities += value;
+              totalLiabilities += converted;
             }
           }
-        });
-        
+        }
         return {
           ...entry,
           accountValues: updatedAccountValues,
+          exchangeRates: Object.keys(updatedExchangeRates).length > 0 ? updatedExchangeRates : undefined,
           totalAssets,
           totalLiabilities,
           netWorth: totalAssets - totalLiabilities
         };
       }
       return entry;
-    });
-    console.log('[handleUpdateEntryValue] Updated entries:', updatedEntries);
+    }));
+    console.log('[handleUpdateEntryValue] Updated entries (with historic rates):', updatedEntries);
     setEntries(updatedEntries);
   };
 
@@ -392,7 +410,41 @@ function App() {
     setEntries(updatedEntries);
   };
 
-
+  // Auto-populate missing exchange rates for all entries on first load or when accounts/currency change
+  useEffect(() => {
+    async function fillMissingExchangeRates() {
+      const { getExchangeRate } = await import('./utils/currencyConverter');
+      let changed = false;
+      const updatedEntries = await Promise.all(entries.map(async entry => {
+        let updatedExchangeRates = { ...(entry.exchangeRates || {}) };
+        let needsUpdate = false;
+        for (const acc of accounts) {
+          if (acc.currency !== preferredCurrency) {
+            const pair = `${acc.currency}-${preferredCurrency}`;
+            if (!updatedExchangeRates[pair] || !isFinite(updatedExchangeRates[pair]) || updatedExchangeRates[pair] <= 0) {
+              const rate = await getExchangeRate(acc.currency, preferredCurrency, entry.date);
+              updatedExchangeRates[pair] = rate;
+              needsUpdate = true;
+            }
+          }
+        }
+        if (needsUpdate) {
+          changed = true;
+          return {
+            ...entry,
+            exchangeRates: Object.keys(updatedExchangeRates).length > 0 ? updatedExchangeRates : undefined
+          };
+        }
+        return entry;
+      }));
+      if (changed) {
+        setEntries(updatedEntries);
+      }
+    }
+    if (entries.length > 0 && accounts.length > 0 && preferredCurrency) {
+      fillMissingExchangeRates();
+    }
+  }, [entries, accounts, preferredCurrency]);
 
   // useEffect(() => {
   //   const unsub = onAuthStateChanged(auth, (u) => {

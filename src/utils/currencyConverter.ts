@@ -1,93 +1,7 @@
-// Exchange rates (as of a recent date - in a real app, these would come from an API)
-// Base currency is USD
-export const exchangeRates: { [key: string]: number } = {
-  USD: 1.0,
-  EUR: 0.85,
-  GBP: 0.73,
-  SGD: 1.35,
-  JPY: 110.0,
-  CAD: 1.25,
-  AUD: 1.35,
-  CHF: 0.92,
-  CNY: 6.45,
-  INR: 74.5,
-  KRW: 1150.0,
-  THB: 33.0,
-  MYR: 4.15,
-  IDR: 14250.0,
-  PHP: 50.5,
-  VND: 23000.0,
-  HKD: 7.8,
-  TWD: 28.0,
-  NZD: 1.4,
-  SEK: 8.5,
-  NOK: 8.8,
-  DKK: 6.3,
-  PLN: 3.8,
-  CZK: 21.5,
-  HUF: 300.0,
-  RON: 4.2,
-  BGN: 1.65,
-  HRK: 6.3,
-  RUB: 75.0,
-  TRY: 8.5,
-  BRL: 5.2,
-  MXN: 20.0,
-  ARS: 95.0,
-  CLP: 750.0,
-  COP: 3800.0,
-  PEN: 3.8,
-  UYU: 42.0,
-  ZAR: 14.5,
-  EGP: 15.7,
-  NGN: 410.0,
-  KES: 110.0,
-  GHS: 6.0,
-  MAD: 9.0,
-  TND: 2.8,
-  AED: 3.67,
-  SAR: 3.75,
-  QAR: 3.64,
-  KWD: 0.30,
-  BHD: 0.38,
-  OMR: 0.38,
-  JOD: 0.71,
-  LBP: 1500.0,
-  ILS: 3.2,
-  LYD: 4.5,
-  DZD: 135.0,
-  XOF: 550.0,
-  XAF: 550.0,
-  UGX: 3500.0,
-  TZS: 2300.0,
-  ZMW: 18.0,
-  BWP: 11.0,
-  NAD: 14.5,
-  SZL: 14.5,
-  LSL: 14.5,
-  MUR: 40.0,
-  SCR: 13.5,
-  MVR: 15.4,
-  BDT: 85.0,
-  NPR: 120.0,
-  PKR: 160.0,
-  LKR: 200.0,
-  MMK: 1650.0,
-  KHR: 4100.0,
-  LAK: 9500.0,
-  MNT: 2850.0,
-  KZT: 420.0,
-  UZS: 10500.0,
-  TJS: 11.0,
-  KGS: 84.0,
-  TMT: 3.5,
-  AZN: 1.7,
-  GEL: 3.1,
-  AMD: 500.0,
-  BYN: 2.5,
-  MDL: 17.5,
-  UAH: 27.0,
-};
+// Remove yahoo-finance2 import
+// Cache for exchange rates to avoid repeated API calls
+const rateCache: { [key: string]: { rate: number; timestamp: number } } = {};
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
 
 export const currencyNames: { [key: string]: string } = {
   USD: 'US Dollar',
@@ -178,22 +92,114 @@ export const currencyNames: { [key: string]: string } = {
   UAH: 'Ukrainian Hryvnia',
 };
 
-export function convertCurrency(amount: number, fromCurrency: string, toCurrency: string): number {
+// Get exchange rate from Frankfurter.app for a specific date
+export async function getExchangeRate(fromCurrency: string, toCurrency: string, date: string = new Date().toISOString().split('T')[0]): Promise<number> {
+  if (fromCurrency === toCurrency) {
+    return 1.0;
+  }
+
+  // If the date is in the future, use today instead
+  const today = new Date().toISOString().split('T')[0];
+  if (date > today) {
+    date = today;
+  }
+
+  const cacheKey = `${fromCurrency}-${toCurrency}-${date}`;
+  const now = Date.now();
+
+  // Check cache first
+  if (rateCache[cacheKey] && (now - rateCache[cacheKey].timestamp) < CACHE_DURATION) {
+    return rateCache[cacheKey].rate;
+  }
+
+  try {
+    let url;
+    if (date === today) {
+      // Latest rate
+      url = `https://api.frankfurter.app/latest?from=${fromCurrency}&to=${toCurrency}`;
+    } else {
+      // Historical rate
+      url = `https://api.frankfurter.app/${date}?from=${fromCurrency}&to=${toCurrency}`;
+    }
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+    const data = await response.json();
+    const rate = data.rates[toCurrency];
+    if (!rate) {
+      throw new Error(`Rate not found for ${fromCurrency} to ${toCurrency}`);
+    }
+    // Cache the result
+    rateCache[cacheKey] = {
+      rate,
+      timestamp: now
+    };
+    return rate;
+  } catch (error) {
+    console.error('Error fetching exchange rate from Frankfurter.app:', error);
+    throw error;
+  }
+}
+
+// Get current exchange rate (today's date)
+export async function getCurrentExchangeRate(fromCurrency: string, toCurrency: string): Promise<number> {
+  return getExchangeRate(fromCurrency, toCurrency);
+}
+
+// Convert currency using real-time rates
+export async function convertCurrency(amount: number, fromCurrency: string, toCurrency: string, date?: string): Promise<number> {
   if (fromCurrency === toCurrency) {
     return amount;
   }
 
-  const fromRate = exchangeRates[fromCurrency];
-  const toRate = exchangeRates[toCurrency];
+  const rate = await getExchangeRate(fromCurrency, toCurrency, date);
+  return amount * rate;
+}
 
-  if (!fromRate || !toRate) {
-    console.warn(`Exchange rate not found for ${fromCurrency} or ${toCurrency}`);
-    return amount; // Return original amount if conversion not possible
+// Convert currency with fallback to cached rates (for synchronous operations)
+export function convertCurrencySync(amount: number, fromCurrency: string, toCurrency: string): number {
+  if (fromCurrency === toCurrency) {
+    return amount;
   }
 
-  // Convert to USD first, then to target currency
-  const usdAmount = amount / fromRate;
-  return usdAmount * toRate;
+  // Try to use cached rate if available
+  const today = new Date().toISOString().split('T')[0];
+  const cacheKey = `${fromCurrency}-${toCurrency}-${today}`;
+  
+  if (rateCache[cacheKey]) {
+    return amount * rateCache[cacheKey].rate;
+  }
+
+  // Fallback: return original amount if no cached rate
+  console.warn(`No cached exchange rate for ${fromCurrency} to ${toCurrency}. Using original amount.`);
+  return amount;
+}
+
+// Convert currency for a given entry, always using the stored rate if available, otherwise fetching from API
+export async function convertCurrencyWithEntry(amount: number, fromCurrency: string, toCurrency: string, date: string, exchangeRates?: { [currencyPair: string]: number }): Promise<number> {
+  if (fromCurrency === toCurrency) {
+    return amount;
+  }
+  const pair = `${fromCurrency}-${toCurrency}`;
+  // 1. Use stored rate if available
+  if (exchangeRates && typeof exchangeRates[pair] === 'number' && isFinite(exchangeRates[pair]) && exchangeRates[pair] > 0) {
+    return amount * exchangeRates[pair];
+  }
+  // 2. Use in-memory cache if available
+  const today = date || new Date().toISOString().split('T')[0];
+  const cacheKey = `${fromCurrency}-${toCurrency}-${today}`;
+  if (rateCache[cacheKey]) {
+    return amount * rateCache[cacheKey].rate;
+  }
+  // 3. Fetch from API
+  try {
+    const rate = await getExchangeRate(fromCurrency, toCurrency, today);
+    return amount * rate;
+  } catch (error) {
+    console.warn(`[convertCurrencyWithEntry] Could not fetch rate for ${pair} on ${today}:`, error);
+    return amount; // Fallback: return original amount
+  }
 }
 
 export function formatCurrency(amount: number, currency: string): string {
@@ -220,8 +226,21 @@ export function formatCurrency(amount: number, currency: string): string {
 }
 
 export function getAvailableCurrencies(): Array<{ code: string; name: string }> {
-  return Object.keys(exchangeRates).map(code => ({
+  return Object.keys(currencyNames).map(code => ({
     code,
     name: currencyNames[code] || code
   })).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// Clear the rate cache (useful for testing or when rates become stale)
+export function clearRateCache(): void {
+  Object.keys(rateCache).forEach(key => delete rateCache[key]);
+}
+
+// Get cache statistics for debugging
+export function getCacheStats(): { size: number; keys: string[] } {
+  return {
+    size: Object.keys(rateCache).length,
+    keys: Object.keys(rateCache)
+  };
 } 

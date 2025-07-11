@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Account, NetWorthEntry } from '../types';
-import { convertCurrency, formatCurrency } from '../utils/currencyConverter';
+import { convertCurrency, convertCurrencySync, formatCurrency, getExchangeRate, convertCurrencyWithEntry } from '../utils/currencyConverter';
 import EmptyState from './EmptyState';
 
 interface DailyEntryProps {
@@ -16,6 +16,7 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
   const [inputValues, setInputValues] = useState<{ [accountId: string]: string }>({});
   const [editingEntry, setEditingEntry] = useState<NetWorthEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [convertedValues, setConvertedValues] = useState<{ [accountId: string]: string }>({});
 
   // Shortcut to go to Settings > Accounts
   const handleGoToAccounts = () => {
@@ -56,6 +57,31 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
       setEditingEntry(null);
     }
   }, [selectedDate, existingEntry, accounts]);
+
+  React.useEffect(() => {
+    accounts.forEach(account => {
+      const value = accountValues[account.id] || 0;
+      console.log(`[DEBUG] Triggering conversion for account ${account.name} (${account.currency}) with value=${value}, preferredCurrency=${preferredCurrency}, date=${selectedDate}`);
+      if (account.currency !== preferredCurrency && value) {
+        convertCurrencyWithEntry(value, account.currency, preferredCurrency, selectedDate)
+          .then(converted => {
+            console.log(`[DEBUG] Converted value for ${account.name}: ${value} ${account.currency} -> ${converted} ${preferredCurrency}`);
+            setConvertedValues(prev => ({
+              ...prev,
+              [account.id]: formatCurrency(converted, preferredCurrency)
+            }));
+          })
+          .catch(error => {
+            console.error(`[DEBUG] Conversion failed for ${account.name}:`, error);
+          });
+      } else {
+        setConvertedValues(prev => ({
+          ...prev,
+          [account.id]: formatCurrency(value, preferredCurrency)
+        }));
+      }
+    });
+  }, [accounts, accountValues, preferredCurrency, selectedDate]);
 
   const handleAccountValueChange = (accountId: string, value: string) => {
     // Update the input display value
@@ -107,7 +133,7 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
 
     accounts.forEach(account => {
       const value = accountValues[account.id] || 0;
-      const convertedValue = convertCurrency(value, account.currency, preferredCurrency);
+      const convertedValue = convertCurrencySync(value, account.currency, preferredCurrency);
       
       if (account.type === 'asset') {
         totalAssets += convertedValue;
@@ -123,8 +149,54 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
     };
   };
 
-  const handleSave = () => {
-    const { totalAssets, totalLiabilities, netWorth } = calculateTotals();
+  const handleSave = async () => {
+    // Fetch exchange rates for all currency pairs needed for this entry
+    const exchangeRates: { [currencyPair: string]: number } = {};
+    const uniqueCurrencies = Array.from(new Set(accounts.map(acc => acc.currency)));
+    
+    // Only fetch rates if we have multiple currencies
+    if (uniqueCurrencies.length > 1) {
+      try {
+        // Fetch rates for each currency pair needed for conversion to preferred currency
+        for (const currency of uniqueCurrencies) {
+          if (currency !== preferredCurrency) {
+            const rate = await getExchangeRate(currency, preferredCurrency, selectedDate);
+            exchangeRates[`${currency}-${preferredCurrency}`] = rate;
+            console.log(`[DEBUG] Fetched rate for ${currency}-${preferredCurrency} on ${selectedDate}:`, rate);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching exchange rates:', error);
+        // Continue with save even if rate fetching fails
+      }
+    }
+    console.log('[DEBUG] All exchangeRates for entry:', exchangeRates);
+
+    // Calculate totals using real-time rates
+    let totalAssets = 0;
+    let totalLiabilities = 0;
+
+    for (const account of accounts) {
+      const value = accountValues[account.id] || 0;
+      if (account.currency === preferredCurrency) {
+        if (account.type === 'asset') {
+          totalAssets += value;
+        } else {
+          totalLiabilities += value;
+        }
+      } else {
+        const rate = exchangeRates[`${account.currency}-${preferredCurrency}`];
+        const convertedValue = rate ? value * rate : value; // Fallback to original value if rate not available
+        console.log(`[DEBUG] Account ${account.name} (${account.currency}): value=${value}, rate=${rate}, convertedValue=${convertedValue}`);
+        if (account.type === 'asset') {
+          totalAssets += convertedValue;
+        } else {
+          totalLiabilities += convertedValue;
+        }
+      }
+    }
+
+    const netWorth = totalAssets - totalLiabilities;
 
     const newEntry: NetWorthEntry = {
       id: editingEntry?.id || Date.now().toString(),
@@ -132,7 +204,8 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
       accountValues: { ...accountValues },
       totalAssets,
       totalLiabilities,
-      netWorth
+      netWorth,
+      exchangeRates: Object.keys(exchangeRates).length > 0 ? exchangeRates : undefined
     };
 
     let updatedEntries;
@@ -239,7 +312,7 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
             <div className="text-xs text-gray-600">
               <div className="truncate">{formatCurrency(accountValues[account.id], account.currency)}</div>
               <div className="text-gray-400 truncate">
-                = {formatCurrency(convertCurrency(accountValues[account.id], account.currency, preferredCurrency), preferredCurrency)}
+                = {convertedValues[account.id] || '...'}
               </div>
             </div>
           ) : (

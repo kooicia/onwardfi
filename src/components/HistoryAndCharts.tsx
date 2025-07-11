@@ -1,7 +1,7 @@
 import React, { ReactElement, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { NetWorthEntry, Account } from '../types';
-import { formatCurrency, convertCurrency } from '../utils/currencyConverter';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, ReferenceLine } from 'recharts';
+import { NetWorthEntry, Account, ASSET_CATEGORIES, LIABILITY_CATEGORIES } from '../types';
+import { formatCurrency, convertCurrencySync } from '../utils/currencyConverter';
 import EmptyState from './EmptyState';
 import AccountDetailsTable from './AccountDetailsTable';
 
@@ -9,8 +9,18 @@ interface HistoryAndChartsProps {
   entries: NetWorthEntry[];
   accounts: Account[];
   preferredCurrency: string;
-  onUpdateEntryValue: (entryId: string, accountId: string, newValue: number) => void;
+  onUpdateEntryValue: (entryId: string, accountId: string, newValue: number) => Promise<void>;
   onCreateFirstEntry?: () => void;
+}
+
+// Helper to convert hex to rgba
+function hexToRgba(hex: string, alpha: number) {
+  const h = hex.replace('#', '');
+  const bigint = parseInt(h, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 export default function HistoryAndCharts({ entries, accounts, preferredCurrency, onUpdateEntryValue, onCreateFirstEntry }: HistoryAndChartsProps) {
@@ -25,9 +35,19 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
     accounts.forEach(acc => {
       const value = entry.accountValues[acc.id] || 0;
       if (acc.type === 'asset') {
-        assets += convertCurrency(value, acc.currency, preferredCurrency);
+        // Use stored exchange rate if available, otherwise use current rate
+        if (entry.exchangeRates && entry.exchangeRates[`${acc.currency}-${preferredCurrency}`]) {
+          assets += value * entry.exchangeRates[`${acc.currency}-${preferredCurrency}`];
+        } else {
+          assets += convertCurrencySync(value, acc.currency, preferredCurrency);
+        }
       } else if (acc.type === 'liability') {
-        liabilities += convertCurrency(value, acc.currency, preferredCurrency);
+        // Use stored exchange rate if available, otherwise use current rate
+        if (entry.exchangeRates && entry.exchangeRates[`${acc.currency}-${preferredCurrency}`]) {
+          liabilities += value * entry.exchangeRates[`${acc.currency}-${preferredCurrency}`];
+        } else {
+          liabilities += convertCurrencySync(value, acc.currency, preferredCurrency);
+        }
       }
     });
     return {
@@ -49,6 +69,53 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
       liabilities,
       netWorth
     };
+  });
+
+  // Prepare chart data by category
+  const allCategories = [...ASSET_CATEGORIES, ...LIABILITY_CATEGORIES];
+  const categoryColors: { [key: string]: string } = {
+    cash: '#f59e42',
+    stocks: '#3b82f6',
+    crypto: '#8b5cf6',
+    properties: '#10b981',
+    'other-assets': '#6366f1',
+    mortgage: '#ef4444',
+    loans: '#fbbf24',
+    'credit-card-debt': '#f43f5e',
+    'other-liabilities': '#64748b',
+  };
+
+  const chartDataByCategory = sortedEntries.map(entry => {
+    const row: any = { date: new Date(entry.date).toLocaleDateString() };
+    let assetSum = 0;
+    let liabilitySum = 0;
+    allCategories.forEach(cat => {
+      // Sum all accounts in this category
+      const sum = accounts
+        .filter(acc => acc.category === cat.value)
+        .reduce((total, acc) => {
+          const value = entry.accountValues[acc.id] || 0;
+          let convertedValue: number;
+          
+          // Use stored exchange rate if available, otherwise use current rate
+          if (entry.exchangeRates && entry.exchangeRates[`${acc.currency}-${preferredCurrency}`]) {
+            convertedValue = value * entry.exchangeRates[`${acc.currency}-${preferredCurrency}`];
+          } else {
+            convertedValue = convertCurrencySync(value, acc.currency, preferredCurrency);
+          }
+          
+          // Liabilities are always negative for stacking
+          const v = acc.type === 'liability'
+            ? -Math.abs(convertedValue)
+            : convertedValue;
+          return total + v;
+        }, 0);
+      row[cat.value] = sum;
+      if (cat.type === 'asset') assetSum += sum;
+      if (cat.type === 'liability') liabilitySum += sum;
+    });
+    row.netWorth = assetSum + liabilitySum;
+    return row;
   });
 
   const formatCurrencyForDisplay = (value: number) => {
@@ -110,11 +177,54 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      // Find net worth, asset, and liability entries
+      const netWorthEntry = payload.find((entry: any) => entry.name === 'Net Worth');
+      const assetEntries = payload.filter((entry: any) => {
+        const cat = categoriesWithAccounts.find(cat => cat.label === entry.name);
+        return cat && cat.type === 'asset';
+      });
+      const liabilityEntries = payload.filter((entry: any) => {
+        const cat = categoriesWithAccounts.find(cat => cat.label === entry.name);
+        return cat && cat.type === 'liability';
+      });
       return (
         <div className="bg-white p-3 border border-gray-200 rounded shadow">
           <p className="font-medium">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }}>
+          {netWorthEntry && (
+            <p
+              style={{
+                color: netWorthEntry.color,
+                fontSize: 16,
+                fontWeight: 600,
+                margin: 0,
+              }}
+            >
+              {netWorthEntry.name}: {formatCurrencyForDisplay(netWorthEntry.value)}
+            </p>
+          )}
+          {assetEntries.map((entry: any, index: number) => (
+            <p
+              key={"asset-" + index}
+              style={{
+                color: entry.color,
+                fontSize: 13,
+                fontWeight: 400,
+                margin: 0,
+              }}
+            >
+              {entry.name}: {formatCurrencyForDisplay(entry.value)}
+            </p>
+          ))}
+          {liabilityEntries.map((entry: any, index: number) => (
+            <p
+              key={"liab-" + index}
+              style={{
+                color: entry.color,
+                fontSize: 13,
+                fontWeight: 400,
+                margin: 0,
+              }}
+            >
               {entry.name}: {formatCurrencyForDisplay(entry.value)}
             </p>
           ))}
@@ -123,6 +233,37 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
     }
     return null;
   };
+
+  // Only include categories with at least one account, and sort assets first, then liabilities
+  const categoriesWithAccounts = allCategories
+    .filter(cat => accounts.some(acc => acc.category === cat.value))
+    .sort((a, b) => {
+      if (a.type === b.type) return 0;
+      return a.type === 'asset' ? -1 : 1;
+    });
+
+  // Custom small legend for charts
+  const SmallLegend = (props: any) => (
+    <ul style={{ display: 'flex', flexWrap: 'wrap', fontSize: 12, margin: 0, padding: 0, listStyle: 'none' }}>
+      {categoriesWithAccounts.map((cat, index) => {
+        const entry = props.payload.find((e: any) => e.value === cat.label);
+        if (!entry) return null;
+        return (
+          <li key={`item-${index}`} style={{ marginRight: 16, display: 'flex', alignItems: 'center' }}>
+            <span style={{
+              display: 'inline-block',
+              width: 10,
+              height: 10,
+              backgroundColor: entry.color,
+              marginRight: 6,
+              borderRadius: 2,
+            }} />
+            <span>{entry.value}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
 
   if (entries.length === 0) {
     return (
@@ -179,12 +320,12 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
         </div>
       </div>
 
-      {/* Chart */}
+      {/* Category Breakdown Chart */}
       <div className="mb-6 sm:mb-8">
-        <h3 className="text-base sm:text-lg font-semibold mb-4">Net Worth Trends</h3>
+        <h3 className="text-base sm:text-lg font-semibold mb-4">Net Worth by Category</h3>
         <div className="h-64 sm:h-80" style={{ marginLeft: '20px' }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ left: 20, right: 20, top: 20, bottom: 20 }}>
+            <BarChart data={chartDataByCategory} margin={{ left: 20, right: 20, top: 20, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="date" 
@@ -194,10 +335,9 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
                 height={80}
               />
               <YAxis 
+                domain={['dataMin', 'dataMax']}
                 tickFormatter={(value) => {
-                  // Round to nearest thousand for cleaner Y-axis labels
                   const rounded = Math.round(value / 1000) * 1000;
-                  // Format without decimals for Y-axis
                   return new Intl.NumberFormat('en-US', {
                     style: 'currency',
                     currency: preferredCurrency,
@@ -207,33 +347,30 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
                 }}
                 tick={{ fontSize: 12 }}
               />
+              <ReferenceLine y={0} stroke="#888" strokeDasharray="3 3" />
               <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="assets" 
-                stroke="#10b981" 
-                strokeWidth={2}
-                dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                name="Assets"
-              />
-              <Line 
-                type="monotone" 
-                dataKey="liabilities" 
-                stroke="#ef4444" 
-                strokeWidth={2}
-                dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
-                name="Liabilities"
-              />
+              <Legend content={<SmallLegend />} />
+              {categoriesWithAccounts.map(cat => (
+                <Bar
+                  key={cat.value}
+                  dataKey={cat.value}
+                  stackId={cat.type === 'liability' ? 'liabilities' : 'assets'}
+                  fill={hexToRgba(categoryColors[cat.value] || '#8884d8', 0.7)}
+                  name={cat.label}
+                  isAnimationActive={false}
+                />
+              ))}
               <Line 
                 type="monotone" 
                 dataKey="netWorth" 
-                stroke="#3b82f6" 
+                stroke="#2563eb"
                 strokeWidth={3}
-                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 5 }}
+                dot={{ r: 5, fill: '#2563eb', stroke: '#fff', strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: '#2563eb', stroke: '#fff', strokeWidth: 3 }}
                 name="Net Worth"
+                yAxisId={0}
               />
-            </LineChart>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
