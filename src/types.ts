@@ -45,4 +45,5 @@ export const CURRENCIES = [
   { code: 'JPY', name: 'Japanese Yen' },
   { code: 'SGD', name: 'Singapore Dollar' },
   { code: 'MYR', name: 'Malaysian Ringgit' },
+  { code: 'AUD', name: 'Australian Dollar' },
 ]; 
