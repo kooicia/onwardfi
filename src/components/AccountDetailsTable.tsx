@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Table, Input, Button, Space, Typography, Checkbox } from 'antd';
 import { NetWorthEntry, Account } from '../types';
 import { formatCurrency, convertCurrency } from '../utils/currencyConverter';
@@ -19,6 +19,16 @@ export default function AccountDetailsTable({
   const [showOriginalCurrency, setShowOriginalCurrency] = useState(true);
   const [editingCell, setEditingCell] = useState<{ entryId: string; accountId: string; column: 'original' | 'usd' } | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  // Helper function to format date as yyyy/mm/dd
+  const formatDate = (date: string | Date) => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
+  };
 
   const handleCellClick = (entryId: string, accountId: string, column: 'original' | 'usd', currentValue: number) => {
     setEditingCell({ entryId, accountId, column });
@@ -81,6 +91,16 @@ export default function AccountDetailsTable({
   
   // If all accounts have the same currency as preferred, force showOriginalCurrency to false
   const effectiveShowOriginalCurrency = allAccountsSameCurrency ? false : showOriginalCurrency;
+
+  // Scroll to the rightmost position (most recent dates) when component loads
+  useEffect(() => {
+    if (tableRef.current) {
+      const scrollContainer = tableRef.current.querySelector('.ant-table-body');
+      if (scrollContainer) {
+        scrollContainer.scrollLeft = scrollContainer.scrollWidth;
+      }
+    }
+  }, [entries, effectiveShowOriginalCurrency]);
 
   // Generate data source for the table
   const generateDataSource = () => {
@@ -283,7 +303,7 @@ export default function AccountDetailsTable({
   const generateColumns = () => {
     const columns: any[] = [
       {
-        title: 'Account',
+        title: <span className="text-sm font-medium">Account</span>,
         dataIndex: 'account',
         key: 'account',
         width: 200,
@@ -310,7 +330,7 @@ export default function AccountDetailsTable({
 
     if (effectiveShowOriginalCurrency) {
       columns.push({
-        title: 'Currency',
+        title: <span className="text-sm font-medium">Currency</span>,
         dataIndex: 'currency',
         key: 'currency',
         width: 80,
@@ -332,14 +352,14 @@ export default function AccountDetailsTable({
     }
 
     sortedEntries.forEach(entry => {
-      const dateStr = new Date(entry.date).toLocaleDateString();
+      const dateStr = formatDate(entry.date);
       
       if (effectiveShowOriginalCurrency) {
         columns.push(
           {
             title: (
               <div className="text-center">
-                <div className="font-medium">{dateStr}</div>
+                <div className="text-sm font-medium">{dateStr}</div>
                 <div className="text-xs text-gray-400">Original</div>
               </div>
             ),
@@ -387,7 +407,7 @@ export default function AccountDetailsTable({
           {
             title: (
               <div className="text-center">
-                <div className="font-medium">{dateStr}</div>
+                <div className="text-sm font-medium">{dateStr}</div>
                 <div className="text-xs text-gray-400">{preferredCurrency}</div>
               </div>
             ),
@@ -436,7 +456,7 @@ export default function AccountDetailsTable({
         );
       } else {
         columns.push({
-          title: dateStr,
+          title: <span className="text-sm font-medium">{dateStr}</span>,
           dataIndex: `${entry.id}-preferred`,
           key: `${entry.id}-preferred`,
           width: 120,
@@ -501,7 +521,7 @@ export default function AccountDetailsTable({
         </Space>
       </div>
       
-      <div className="modern-ant-table">
+      <div className="modern-ant-table" ref={tableRef}>
         <Table
           dataSource={generateDataSource()}
           columns={generateColumns()}
