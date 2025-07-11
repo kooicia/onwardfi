@@ -351,8 +351,9 @@ export default function AccountDetailsTable({
       });
     }
 
-    sortedEntries.forEach(entry => {
+    sortedEntries.forEach((entry, index) => {
       const dateStr = formatDate(entry.date);
+      const isLastEntry = index === sortedEntries.length - 1;
       
       if (effectiveShowOriginalCurrency) {
         columns.push(
@@ -367,6 +368,8 @@ export default function AccountDetailsTable({
             key: `${entry.id}-original`,
             width: 120,
             align: 'right' as const,
+            fixed: isLastEntry ? 'right' : undefined,
+            className: isLastEntry ? 'latest-data-accent' : undefined,
             render: (text: string, record: any) => {
               // Only allow editing for individual account rows, not totals
               if (record.type === 'asset-row' || record.type === 'liability-row') {
@@ -415,6 +418,7 @@ export default function AccountDetailsTable({
             key: `${entry.id}-preferred`,
             width: 120,
             align: 'right' as const,
+            fixed: isLastEntry ? 'right' : undefined, // <-- Now also fixed for the latest date
             render: (text: string, record: any) => {
               // Only allow editing for individual account rows, not totals
               if (record.type === 'asset-row' || record.type === 'liability-row') {
@@ -461,6 +465,8 @@ export default function AccountDetailsTable({
           key: `${entry.id}-preferred`,
           width: 120,
           align: 'right' as const,
+          fixed: isLastEntry ? 'right' : undefined,
+          className: isLastEntry ? 'latest-data-accent' : undefined,
           render: (text: string, record: any) => {
             // Only allow editing for individual account rows, not totals
             if (record.type === 'asset-row' || record.type === 'liability-row') {
@@ -522,6 +528,16 @@ export default function AccountDetailsTable({
       </div>
       
       <div className="modern-ant-table" ref={tableRef}>
+        <style>{`
+          .latest-data-accent {
+            border-left: 3px solid #1890ff !important;
+          }
+          .sum-row .latest-data-accent,
+          .latest-data-accent.sum-row,
+          .ant-table-row.sum-row .latest-data-accent {
+            border-left: 3px solid #1890ff !important;
+          }
+        `}</style>
         <Table
           dataSource={generateDataSource()}
           columns={generateColumns()}
@@ -532,11 +548,14 @@ export default function AccountDetailsTable({
           className="modern-ant-table"
           rowClassName={(record, index) => {
             const baseClass = record.className || '';
+            // Add 'sum-row' for net worth and category sum rows
+            const isSumRow = record.type === 'networth' || record.type?.includes('category-sum');
+            const sumRowClass = isSumRow ? 'sum-row' : '';
             // Freeze only the Net Worth row
             if (record.key === 'net-worth') {
-              return `${baseClass} sticky top-0 z-10 bg-white border-b-2`;
+              return `${baseClass} sticky top-0 z-10 bg-white border-b-2 ${sumRowClass}`;
             }
-            return baseClass;
+            return `${baseClass} ${sumRowClass}`;
           }}
         />
       </div>
