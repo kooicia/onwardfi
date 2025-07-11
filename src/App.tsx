@@ -299,7 +299,7 @@ function App() {
       }
       return entry;
     });
-    
+    console.log('[handleUpdateEntryValue] Updated entries:', updatedEntries);
     setEntries(updatedEntries);
   };
 

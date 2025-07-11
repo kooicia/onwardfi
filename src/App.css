@@ -72,3 +72,103 @@
 .liability-category-row:hover {
   background-color: #fecaca !important; /* Light red */
 }
+
+.modern-ant-table .ant-table {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 4px 24px 0 rgba(30,41,59,0.08);
+  font-size: 1rem;
+  background: #fff;
+}
+/* Header */
+.modern-ant-table .ant-table-thead > tr > th {
+  background: #f9fafb;
+  color: #64748b;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.95rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Asset category sum row */
+.modern-ant-table .asset-category-sum td {
+  background: #f0fdf4 !important; /* Tailwind green-50 */
+  color: #166534 !important;      /* Tailwind green-800 */
+  font-weight: 600 !important;
+  font-family: inherit, system-ui, sans-serif;
+}
+
+/* Asset row */
+.modern-ant-table .asset-row td {
+  background: #fff !important;
+  color: #15803d !important;      /* Tailwind green-700 */
+  font-weight: 500 !important;
+  font-family: inherit, system-ui, sans-serif;
+}
+
+/* Liability category sum row */
+.modern-ant-table .liability-category-sum td {
+  background: #fef2f2 !important; /* Tailwind red-50 */
+  color: #b91c1c !important;      /* Tailwind red-800 */
+  font-weight: 600 !important;
+  font-family: inherit, system-ui, sans-serif;
+}
+
+/* Liability row */
+.modern-ant-table .liability-row td {
+  background: #fff !important;
+  color: #dc2626 !important;      /* Tailwind red-600 */
+  font-weight: 500 !important;
+  font-family: inherit, system-ui, sans-serif;
+}
+
+/* Net worth row */
+.modern-ant-table .networth-row td {
+  background: #eff6ff !important; /* Tailwind blue-50 */
+  color: #1d4ed8 !important;      /* Tailwind blue-700 */
+  font-weight: 700 !important;
+  font-family: inherit, system-ui, sans-serif;
+}
+
+/* General cell tweaks */
+.modern-ant-table .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+  transition: background 0.2s;
+  font-size: 0.97rem;
+  font-family: inherit, system-ui, sans-serif;
+}
+/* AntD Table row-type-specific hover effects */
+.modern-ant-table .asset-row:hover td {
+  background: #f0fdf4 !important; /* Very light green */
+}
+.modern-ant-table .liability-row:hover td {
+  background: #fef2f2 !important; /* Very light red */
+}
+.modern-ant-table .asset-category-sum:hover td {
+  background: #dcfce7 !important; /* Light green */
+}
+.modern-ant-table .liability-category-sum:hover td {
+  background: #fecaca !important; /* Light red */
+}
+.modern-ant-table .networth-row:hover td {
+  background: #dbeafe !important; /* Light blue */
+}
+
+/* Keep generic hover for other rows */
+.modern-ant-table .ant-table-tbody > tr:hover > td {
+  background: #f3f4f6;
+}
+
+/* Font-mono for numbers */
+.modern-ant-table .ant-table-tbody > tr > td .font-mono {
+  font-family: 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+}
+
+.modern-ant-table .asset-category-sum td,
+.modern-ant-table .liability-category-sum td,
+.modern-ant-table .networth-row td {
+  border-left: none !important;
+  border-right: none !important;
+}
