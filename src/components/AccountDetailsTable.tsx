@@ -372,7 +372,7 @@ export default function AccountDetailsTable({
                   const value = entry.accountValues[accountId] || 0;
                   return (
                     <span 
-                      className="font-mono text-sm cursor-pointer hover:bg-blue-50 px-1 rounded"
+                      className="font-mono text-sm cursor-pointer hover:bg-blue-50 px-1 rounded text-gray-700"
                       onClick={() => handleCellClick(entry.id, accountId, 'original', value)}
                     >
                       {text}
@@ -381,7 +381,7 @@ export default function AccountDetailsTable({
                 }
               }
               
-              return <span className="font-mono text-sm">{text}</span>;
+              return <span className="font-mono text-sm text-gray-700">{text}</span>;
             }
           },
           {
@@ -510,7 +510,14 @@ export default function AccountDetailsTable({
           size="small"
           bordered
           className="modern-ant-table"
-          rowClassName={(record) => record.className || ''}
+          rowClassName={(record, index) => {
+            const baseClass = record.className || '';
+            // Freeze only the Net Worth row
+            if (record.key === 'net-worth') {
+              return `${baseClass} sticky top-0 z-10 bg-white border-b-2`;
+            }
+            return baseClass;
+          }}
         />
       </div>
     </div>
