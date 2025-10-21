@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Account, NetWorthEntry } from '../types';
+import { Account, NetWorthEntry, AccountCategory } from '../types';
 import { convertCurrency, convertCurrencySync, formatCurrency, getExchangeRate, convertCurrencyWithEntry } from '../utils/currencyConverter';
 import EmptyState from './EmptyState';
 
@@ -9,14 +9,23 @@ interface DailyEntryProps {
   onEntriesChange: (entries: NetWorthEntry[]) => void;
   preferredCurrency: string;
   onEditAccounts?: () => void;
+  assetCategories?: AccountCategory[];
+  liabilityCategories?: AccountCategory[];
 }
 
-export default function DailyEntry({ accounts, entries, onEntriesChange, preferredCurrency, onEditAccounts }: DailyEntryProps) {
+export default function DailyEntry({ accounts, entries, onEntriesChange, preferredCurrency, onEditAccounts, assetCategories = [], liabilityCategories = [] }: DailyEntryProps) {
   const [accountValues, setAccountValues] = useState<{ [accountId: string]: number }>({});
   const [inputValues, setInputValues] = useState<{ [accountId: string]: string }>({});
   const [editingEntry, setEditingEntry] = useState<NetWorthEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [convertedValues, setConvertedValues] = useState<{ [accountId: string]: string }>({});
+
+  // Helper function to get category label
+  const getCategoryLabel = (categoryValue: string, type: 'asset' | 'liability') => {
+    const categories = type === 'asset' ? assetCategories : liabilityCategories;
+    const category = categories.find(cat => cat.value === categoryValue);
+    return category ? category.label : categoryValue;
+  };
 
   // Shortcut to go to Settings > Accounts
   const handleGoToAccounts = () => {
@@ -341,11 +350,12 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
         <h3 className="text-lg font-semibold mb-4 text-gray-800">{title}</h3>
         {Object.entries(categories).map(([category, categoryAccounts]) => {
           const hasPreviousValues = categoryAccounts.some(account => getPreviousValue(account.id) > 0);
+          const categoryLabel = getCategoryLabel(category, type);
           
           return (
             <div key={category} className="mb-6">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-md font-medium text-gray-700">{category}</h4>
+                <h4 className="text-md font-medium text-gray-700">{categoryLabel}</h4>
                 <div className="flex gap-2">
                   {hasPreviousValues && (
                     <button
@@ -358,9 +368,9 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
                         });
                       }}
                       className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors"
-                      title={`Copy all ${category} values from previous entry`}
+                      title={`Copy all ${categoryLabel} values from previous entry`}
                     >
-                      Copy {category}
+                      Copy {categoryLabel}
                     </button>
                   )}
                   <button
@@ -377,9 +387,9 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
                       });
                     }}
                     className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 transition-colors"
-                    title={`Clear all ${category} values`}
+                    title={`Clear all ${categoryLabel} values`}
                   >
-                    Clear {category}
+                    Clear {categoryLabel}
                   </button>
                 </div>
               </div>

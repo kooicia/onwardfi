@@ -1,6 +1,6 @@
 import React, { ReactElement, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, ReferenceLine } from 'recharts';
-import { NetWorthEntry, Account, ASSET_CATEGORIES, LIABILITY_CATEGORIES } from '../types';
+import { NetWorthEntry, Account, AccountCategory, ASSET_CATEGORIES, LIABILITY_CATEGORIES } from '../types';
 import { formatCurrency, convertCurrencySync } from '../utils/currencyConverter';
 import EmptyState from './EmptyState';
 import AccountDetailsTable from './AccountDetailsTable';
@@ -11,6 +11,8 @@ interface HistoryAndChartsProps {
   preferredCurrency: string;
   onUpdateEntryValue: (entryId: string, accountId: string, newValue: number) => Promise<void>;
   onCreateFirstEntry?: () => void;
+  assetCategories?: AccountCategory[];
+  liabilityCategories?: AccountCategory[];
 }
 
 // Helper to convert hex to rgba
@@ -25,7 +27,7 @@ function hexToRgba(hex: string, alpha: number) {
 
 type ChartFilter = 'all' | 'ytd' | 'last12' | 'last24' | 'year';
 
-export default function HistoryAndCharts({ entries, accounts, preferredCurrency, onUpdateEntryValue, onCreateFirstEntry }: HistoryAndChartsProps) {
+export default function HistoryAndCharts({ entries, accounts, preferredCurrency, onUpdateEntryValue, onCreateFirstEntry, assetCategories = ASSET_CATEGORIES, liabilityCategories = LIABILITY_CATEGORIES }: HistoryAndChartsProps) {
   const [showOriginalCurrency, setShowOriginalCurrency] = useState(true);
   const [editingCell, setEditingCell] = useState<{ entryId: string; accountId: string; column: 'original' | 'usd' } | null>(null);
   const [editValue, setEditValue] = useState<string>('');
@@ -620,6 +622,8 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
         accounts={accounts}
         preferredCurrency={preferredCurrency}
         onUpdateEntryValue={onUpdateEntryValue}
+        assetCategories={assetCategories}
+        liabilityCategories={liabilityCategories}
       />
     </div>
   );

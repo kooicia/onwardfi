@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Table, Input, Button, Space, Typography, Checkbox } from 'antd';
-import { NetWorthEntry, Account } from '../types';
+import { NetWorthEntry, Account, AccountCategory } from '../types';
 import { formatCurrency, convertCurrencySync, convertCurrencyWithEntry } from '../utils/currencyConverter';
 
 interface AccountDetailsTableProps {
@@ -8,13 +8,17 @@ interface AccountDetailsTableProps {
   accounts: Account[];
   preferredCurrency: string;
   onUpdateEntryValue: (entryId: string, accountId: string, newValue: number) => Promise<void>;
+  assetCategories?: AccountCategory[];
+  liabilityCategories?: AccountCategory[];
 }
 
 export default function AccountDetailsTable({ 
   entries, 
   accounts, 
   preferredCurrency, 
-  onUpdateEntryValue 
+  onUpdateEntryValue,
+  assetCategories = [],
+  liabilityCategories = []
 }: AccountDetailsTableProps) {
   const [showOriginalCurrency, setShowOriginalCurrency] = useState(true);
   const [editingCell, setEditingCell] = useState<{ entryId: string; accountId: string; column: 'original' | 'usd' } | null>(null);
@@ -23,6 +27,13 @@ export default function AccountDetailsTable({
 
   // State to store async converted values
   const [convertedValues, setConvertedValues] = useState<{ [key: string]: string }>({});
+
+  // Helper function to get category label
+  const getCategoryLabel = (categoryValue: string, type: 'asset' | 'liability') => {
+    const categories = type === 'asset' ? assetCategories : liabilityCategories;
+    const category = categories.find(cat => cat.value === categoryValue);
+    return category ? category.label : categoryValue;
+  };
 
   // Helper to trigger async conversion for a cell
   const triggerConversion = async (amount: number, from: string, to: string, date: string, cellKey: string, exchangeRates?: { [currencyPair: string]: number }) => {
@@ -240,14 +251,16 @@ export default function AccountDetailsTable({
 
 
     // Add Asset categories and individual accounts
-    const assetCategories = Array.from(new Set(assetAccounts.map(id => accountInfoMap[id].category))).sort();
-    assetCategories.forEach(category => {
+    const assetCategoryValues = Array.from(new Set(assetAccounts.map(id => accountInfoMap[id].category))).sort();
+    assetCategoryValues.forEach(category => {
       const categoryAccounts = assetAccounts.filter(id => accountInfoMap[id].category === category);
       if (categoryAccounts.length > 0) {
+        const categoryLabel = getCategoryLabel(category, 'asset');
+        
         // Category total row
         const categoryRow: any = {
           key: `asset-category-${category}`,
-          account: category,
+          account: categoryLabel,
           type: 'asset-category-sum',
           className: 'asset-category-sum'
         };
@@ -311,14 +324,16 @@ export default function AccountDetailsTable({
 
 
     // Add Liability categories and individual accounts
-    const liabilityCategories = Array.from(new Set(liabilityAccounts.map(id => accountInfoMap[id].category))).sort();
-    liabilityCategories.forEach(category => {
+    const liabilityCategoryValues = Array.from(new Set(liabilityAccounts.map(id => accountInfoMap[id].category))).sort();
+    liabilityCategoryValues.forEach(category => {
       const categoryAccounts = liabilityAccounts.filter(id => accountInfoMap[id].category === category);
       if (categoryAccounts.length > 0) {
+        const categoryLabel = getCategoryLabel(category, 'liability');
+        
         // Category total row
         const categoryRow: any = {
           key: `liability-category-${category}`,
-          account: category,
+          account: categoryLabel,
           type: 'liability-category-sum',
           className: 'liability-category-sum'
         };

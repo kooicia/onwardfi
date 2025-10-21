@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import HistoryAndCharts from "./components/HistoryAndCharts";
 import DataManagement from "./components/DataManagement";
 import Settings from "./components/Settings";
 import Auth from "./components/Auth";
 import FIRECalculator from "./components/FIRECalculator";
 import DailyEntry from "./components/DailyEntry";
-import { Account, NetWorthEntry, AccountCategory, ASSET_CATEGORIES, LIABILITY_CATEGORIES } from "./types";
+import { Account, NetWorthEntry, AccountCategory, ASSET_CATEGORIES, LIABILITY_CATEGORIES, GoogleSheetsConnection } from "./types";
 import "./App.css";
 import LanguageSelector from "./components/LanguageSelector";
 import { useTranslation } from "react-i18next";
+import { syncToGoogleSheets } from "./utils/googleSheetsSync";
 
 
 // import { auth } from "./firebase";
@@ -27,7 +28,11 @@ function App() {
   const [preferredCurrency, setPreferredCurrency] = useState<string>('USD');
   const [assetCategories, setAssetCategories] = useState<AccountCategory[]>(ASSET_CATEGORIES);
   const [liabilityCategories, setLiabilityCategories] = useState<AccountCategory[]>(LIABILITY_CATEGORIES);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'categories' | 'accounts' | 'importexport' | 'danger'>('general');
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'setup' | 'importexport' | 'googlesheets' | 'danger'>('general');
+  const [googleSheetsConnection, setGoogleSheetsConnection] = useState<GoogleSheetsConnection>({
+    isConnected: false,
+    autoSync: false,
+  });
   const { t } = useTranslation();
 
   // Function to create predefined accounts for new users
@@ -107,6 +112,13 @@ function App() {
     }
   }, [assetCategories, liabilityCategories, currentUserId]);
 
+  // Save Google Sheets connection to localStorage whenever it changes
+  useEffect(() => {
+    if (currentUserId) {
+      localStorage.setItem(`fireGoogleSheetsConnection_${currentUserId}`, JSON.stringify(googleSheetsConnection));
+    }
+  }, [googleSheetsConnection, currentUserId]);
+
   // Check for existing login on app start
   useEffect(() => {
     const savedUser = localStorage.getItem('fireUser');
@@ -122,6 +134,7 @@ function App() {
       const savedCurrency = localStorage.getItem(`firePreferredCurrency_${userData.id}`);
       const savedAssetCategories = localStorage.getItem(`fireAssetCategories_${userData.id}`);
       const savedLiabilityCategories = localStorage.getItem(`fireLiabilityCategories_${userData.id}`);
+      const savedGoogleSheetsConnection = localStorage.getItem(`fireGoogleSheetsConnection_${userData.id}`);
       
       if (savedAccounts) {
         setAccounts(JSON.parse(savedAccounts));
@@ -138,15 +151,18 @@ function App() {
       if (savedLiabilityCategories) {
         setLiabilityCategories(JSON.parse(savedLiabilityCategories));
       }
+      if (savedGoogleSheetsConnection) {
+        setGoogleSheetsConnection(JSON.parse(savedGoogleSheetsConnection));
+      }
     }
   }, []);
 
   // Handle hash-based navigation for Settings subtabs
   useEffect(() => {
     const handleHashChange = () => {
-      if (window.location.hash === '#settings-accounts') {
+      if (window.location.hash === '#settings-setup' || window.location.hash === '#settings-accounts') {
         setPage('settings');
-        setSettingsInitialTab('accounts');
+        setSettingsInitialTab('setup');
       }
     };
     window.addEventListener('hashchange', handleHashChange);
@@ -192,6 +208,7 @@ function App() {
       const savedEntries = localStorage.getItem(`fireEntries_${userId}`);
       const savedAssetCategories = localStorage.getItem(`fireAssetCategories_${userId}`);
       const savedLiabilityCategories = localStorage.getItem(`fireLiabilityCategories_${userId}`);
+      const savedGoogleSheetsConnection = localStorage.getItem(`fireGoogleSheetsConnection_${userId}`);
       
       if (savedAccounts) {
         setAccounts(JSON.parse(savedAccounts));
@@ -228,6 +245,12 @@ function App() {
         setLiabilityCategories(JSON.parse(savedLiabilityCategories));
       } else {
         setLiabilityCategories(LIABILITY_CATEGORIES); // Default categories for new users
+      }
+
+      if (savedGoogleSheetsConnection) {
+        setGoogleSheetsConnection(JSON.parse(savedGoogleSheetsConnection));
+      } else {
+        setGoogleSheetsConnection({ isConnected: false, autoSync: false });
       }
     } catch (error) {
       setAuthError('Login failed. Please try again.');
@@ -410,6 +433,49 @@ function App() {
     setEntries(updatedEntries);
   };
 
+  // Auto-sync to Google Sheets when data changes
+  useEffect(() => {
+    const autoSyncToSheets = async () => {
+      if (
+        googleSheetsConnection.isConnected &&
+        googleSheetsConnection.autoSync &&
+        googleSheetsConnection.spreadsheetId &&
+        accounts.length > 0 &&
+        entries.length > 0
+      ) {
+        try {
+          await syncToGoogleSheets(
+            googleSheetsConnection.spreadsheetId,
+            accounts,
+            entries,
+            preferredCurrency
+          );
+          console.log('Auto-synced to Google Sheets');
+          
+          // Update last sync date
+          setGoogleSheetsConnection(prev => ({
+            ...prev,
+            lastSyncDate: new Date().toISOString(),
+          }));
+        } catch (error) {
+          console.error('Auto-sync failed:', error);
+        }
+      }
+    };
+
+    // Debounce the sync to avoid too many API calls
+    const timeoutId = setTimeout(() => {
+      autoSyncToSheets();
+    }, 2000); // Wait 2 seconds after the last change
+
+    return () => clearTimeout(timeoutId);
+  }, [accounts, entries, preferredCurrency, googleSheetsConnection.isConnected, googleSheetsConnection.autoSync, googleSheetsConnection.spreadsheetId]);
+
+  // Handler for Google Sheets connection changes
+  const handleGoogleSheetsConnectionChange = useCallback((connection: GoogleSheetsConnection) => {
+    setGoogleSheetsConnection(connection);
+  }, []);
+
   // Auto-populate missing exchange rates for all entries on first load or when accounts/currency change
   useEffect(() => {
     async function fillMissingExchangeRates() {
@@ -553,9 +619,11 @@ function App() {
             entries={entries}
             onEntriesChange={setEntries}
             preferredCurrency={preferredCurrency}
+            assetCategories={assetCategories}
+            liabilityCategories={liabilityCategories}
             onEditAccounts={() => {
               setPage('settings');
-              setSettingsInitialTab('accounts');
+              setSettingsInitialTab('setup');
             }}
           />
         )}
@@ -566,6 +634,8 @@ function App() {
             preferredCurrency={preferredCurrency}
             onUpdateEntryValue={handleUpdateEntryValue}
             onCreateFirstEntry={() => setPage('entry')}
+            assetCategories={assetCategories}
+            liabilityCategories={liabilityCategories}
           />
         )}
         {page === "data" && (
@@ -590,6 +660,8 @@ function App() {
             onAccountsChange={setAccounts}
             entries={entries}
             onImportData={handleImportData}
+            googleSheetsConnection={googleSheetsConnection}
+            onGoogleSheetsConnectionChange={handleGoogleSheetsConnectionChange}
             initialTab={settingsInitialTab}
           />
         )}

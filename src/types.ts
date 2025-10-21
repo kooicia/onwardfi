@@ -48,4 +48,13 @@ export const CURRENCIES = [
   { code: 'SGD', name: 'Singapore Dollar' },
   { code: 'MYR', name: 'Malaysian Ringgit' },
   { code: 'AUD', name: 'Australian Dollar' },
-]; 
+];
+
+// Google Sheets integration types
+export interface GoogleSheetsConnection {
+  isConnected: boolean;
+  spreadsheetId?: string;
+  spreadsheetUrl?: string;
+  lastSyncDate?: string;
+  autoSync: boolean;
+} 
