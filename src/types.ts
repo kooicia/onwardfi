@@ -48,6 +48,7 @@ export const CURRENCIES = [
   { code: 'SGD', name: 'Singapore Dollar' },
   { code: 'MYR', name: 'Malaysian Ringgit' },
   { code: 'AUD', name: 'Australian Dollar' },
+  { code: 'TWD', name: 'Taiwan Dollar' },
 ];
 
 // Google Sheets integration types

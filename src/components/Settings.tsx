@@ -21,7 +21,7 @@ interface SettingsProps {
   onImportData: (accounts: Account[], entries: NetWorthEntry[]) => void;
   googleSheetsConnection: GoogleSheetsConnection;
   onGoogleSheetsConnectionChange: (connection: GoogleSheetsConnection) => void;
-  initialTab?: 'general' | 'setup' | 'importexport' | 'googlesheets' | 'danger';
+  initialTab?: 'setup' | 'importexport' | 'googlesheets' | 'danger';
 }
 
 export default function Settings({ 
@@ -39,7 +39,7 @@ export default function Settings({
   onGoogleSheetsConnectionChange,
   initialTab
 }: SettingsProps) {
-  const [activeTab, setActiveTab] = useState<'general' | 'setup' | 'importexport' | 'googlesheets' | 'danger'>(initialTab || 'general');
+  const [activeTab, setActiveTab] = useState<'setup' | 'importexport' | 'googlesheets' | 'danger'>(initialTab || 'setup');
   const { t } = useTranslation();
 
   const resetToDefaults = () => {
@@ -53,16 +53,10 @@ export default function Settings({
       {/* Tab Bar */}
       <div className="flex border-b mb-6 gap-2 overflow-x-auto">
         <button
-          className={`px-4 py-2 -mb-px border-b-2 font-medium transition-colors whitespace-nowrap ${activeTab === 'general' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-blue-700'}`}
-          onClick={() => setActiveTab('general')}
-        >
-          {t('generalSettings')}
-        </button>
-        <button
           className={`px-4 py-2 -mb-px border-b-2 font-medium transition-colors whitespace-nowrap ${activeTab === 'setup' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-blue-700'}`}
           onClick={() => setActiveTab('setup')}
         >
-          Categories & Accounts
+          Setup
         </button>
         <button
           className={`px-4 py-2 -mb-px border-b-2 font-medium transition-colors whitespace-nowrap ${activeTab === 'importexport' ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-blue-700'}`}
@@ -87,39 +81,47 @@ export default function Settings({
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'general' && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="text-lg font-semibold text-blue-800 mb-2">{t('generalSettings')}</h3>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('preferredCurrency')}</label>
-            <div className="max-w-xs mb-1">
-              <CurrencySelector
-                selectedCurrency={preferredCurrency}
-                onCurrencyChange={onCurrencyChange}
-              />
-            </div>
-            <p className="text-xs text-gray-600 mb-3">{t('currencyDescription')}</p>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('language')}</label>
-            <div className="max-w-xs">
-              <LanguageSelector />
-            </div>
-          </div>
-        </div>
-      )}
-
       {activeTab === 'setup' && (
         <>
+          {/* General Settings Section */}
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h3 className="text-lg font-semibold text-blue-800 mb-2">Categories & Accounts Setup</h3>
-            <p className="text-sm text-blue-700 mb-2">
-              Set up your categories and accounts in one place. Each category contains related accounts.
-            </p>
-            <button
-              onClick={resetToDefaults}
-              className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600"
-            >
-              {t('resetToDefaults')}
-            </button>
+            <h3 className="text-lg font-semibold text-blue-800 mb-4">{t('generalSettings')}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('preferredCurrency')}</label>
+                <div className="max-w-xs mb-1">
+                  <CurrencySelector
+                    selectedCurrency={preferredCurrency}
+                    onCurrencyChange={onCurrencyChange}
+                  />
+                </div>
+                <p className="text-xs text-gray-600">{t('currencyDescription')}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('language')}</label>
+                <div className="max-w-xs">
+                  <LanguageSelector />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Categories & Accounts Section */}
+          <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-purple-800 mb-1">Categories & Accounts</h3>
+                <p className="text-sm text-purple-700">
+                  Set up your categories and accounts in one place. Each category contains related accounts.
+                </p>
+              </div>
+              <button
+                onClick={resetToDefaults}
+                className="px-3 py-1 text-xs border border-gray-300 text-gray-600 rounded hover:bg-gray-50 hover:border-orange-400 hover:text-orange-600 whitespace-nowrap"
+              >
+                {t('resetToDefaults')}
+              </button>
+            </div>
           </div>
           
           <CategoriesAndAccounts

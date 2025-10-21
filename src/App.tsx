@@ -28,7 +28,7 @@ function App() {
   const [preferredCurrency, setPreferredCurrency] = useState<string>('USD');
   const [assetCategories, setAssetCategories] = useState<AccountCategory[]>(ASSET_CATEGORIES);
   const [liabilityCategories, setLiabilityCategories] = useState<AccountCategory[]>(LIABILITY_CATEGORIES);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'setup' | 'importexport' | 'googlesheets' | 'danger'>('general');
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'setup' | 'importexport' | 'googlesheets' | 'danger'>('setup');
   const [googleSheetsConnection, setGoogleSheetsConnection] = useState<GoogleSheetsConnection>({
     isConnected: false,
     autoSync: false,

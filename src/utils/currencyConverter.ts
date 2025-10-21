@@ -92,6 +92,40 @@ export const currencyNames: { [key: string]: string } = {
   UAH: 'Ukrainian Hryvnia',
 };
 
+// Currencies supported by Frankfurter API (as of 2024)
+const frankfurterSupportedCurrencies = new Set([
+  'AUD', 'BGN', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK',
+  'EUR', 'GBP', 'HKD', 'HUF', 'IDR', 'ILS', 'INR', 'ISK',
+  'JPY', 'KRW', 'MXN', 'MYR', 'NOK', 'NZD', 'PHP', 'PLN',
+  'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR'
+]);
+
+// Fallback to ExchangeRate-API.com for currencies not supported by Frankfurter
+// This API supports 160+ currencies including TWD
+async function getExchangeRateFromFallbackAPI(fromCurrency: string, toCurrency: string): Promise<number> {
+  try {
+    const url = `https://api.exchangerate-api.com/v4/latest/${fromCurrency}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Fallback API request failed: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const rate = data.rates[toCurrency];
+    
+    if (!rate) {
+      throw new Error(`Rate not found in fallback API for ${fromCurrency} to ${toCurrency}`);
+    }
+    
+    console.log(`✓ Got rate from ExchangeRate-API.com: ${fromCurrency} to ${toCurrency} = ${rate}`);
+    return rate;
+  } catch (error) {
+    console.error('Error fetching from fallback API:', error);
+    throw error;
+  }
+}
+
 // Get exchange rate from Frankfurter.app for a specific date
 export async function getExchangeRate(fromCurrency: string, toCurrency: string, date: string = new Date().toISOString().split('T')[0]): Promise<number> {
   if (fromCurrency === toCurrency) {
@@ -110,6 +144,27 @@ export async function getExchangeRate(fromCurrency: string, toCurrency: string, 
   // Check cache first
   if (rateCache[cacheKey] && (now - rateCache[cacheKey].timestamp) < CACHE_DURATION) {
     return rateCache[cacheKey].rate;
+  }
+
+  // Check if currencies are supported by Frankfurter
+  const fromSupported = frankfurterSupportedCurrencies.has(fromCurrency);
+  const toSupported = frankfurterSupportedCurrencies.has(toCurrency);
+
+  // If either currency is not supported by Frankfurter, use fallback API
+  if (!fromSupported || !toSupported) {
+    try {
+      const rate = await getExchangeRateFromFallbackAPI(fromCurrency, toCurrency);
+      // Cache the result
+      rateCache[cacheKey] = {
+        rate,
+        timestamp: now
+      };
+      return rate;
+    } catch (error) {
+      console.error('Fallback API also failed:', error);
+      console.warn(`No exchange rate available for ${fromCurrency} to ${toCurrency}. Using 1:1 ratio.`);
+      return 1.0;
+    }
   }
 
   try {
@@ -138,7 +193,21 @@ export async function getExchangeRate(fromCurrency: string, toCurrency: string, 
     return rate;
   } catch (error) {
     console.error('Error fetching exchange rate from Frankfurter.app:', error);
-    throw error;
+    
+    // Try fallback API (ExchangeRate-API.com)
+    try {
+      const rate = await getExchangeRateFromFallbackAPI(fromCurrency, toCurrency);
+      rateCache[cacheKey] = {
+        rate,
+        timestamp: now
+      };
+      return rate;
+    } catch (fallbackError) {
+      console.error('Fallback API also failed:', fallbackError);
+      // Return 1.0 as final fallback to prevent app from breaking
+      console.warn(`Returning 1:1 ratio for ${fromCurrency} to ${toCurrency} due to all API failures`);
+      return 1.0;
+    }
   }
 }
 
@@ -217,6 +286,7 @@ export function formatCurrency(amount: number, currency: string): string {
     SGD: new Intl.NumberFormat('en-SG', { style: 'currency', currency: 'SGD' }),
     CAD: new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }),
     AUD: new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }),
+    TWD: new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD' }),
   };
 
   const formatter = formatters[currencyCode] || 

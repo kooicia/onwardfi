@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Account, AccountCategory } from '../types';
+import { Account, AccountCategory, CURRENCIES } from '../types';
 import { useTranslation } from 'react-i18next';
 
 interface CategoriesAndAccountsProps {
@@ -237,13 +237,11 @@ export default function CategoriesAndAccounts({
                   onChange={(e) => setAccountForm({ ...accountForm, currency: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
-                  <option value="USD">USD - US Dollar</option>
-                  <option value="EUR">EUR - Euro</option>
-                  <option value="GBP">GBP - British Pound</option>
-                  <option value="JPY">JPY - Japanese Yen</option>
-                  <option value="SGD">SGD - Singapore Dollar</option>
-                  <option value="MYR">MYR - Malaysian Ringgit</option>
-                  <option value="AUD">AUD - Australian Dollar</option>
+                  {CURRENCIES.map(currency => (
+                    <option key={currency.code} value={currency.code}>
+                      {currency.code} - {currency.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -290,13 +288,11 @@ export default function CategoriesAndAccounts({
                         onChange={(e) => setAccountForm({ ...accountForm, currency: e.target.value })}
                         className="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                        <option value="GBP">GBP</option>
-                        <option value="JPY">JPY</option>
-                        <option value="SGD">SGD</option>
-                        <option value="MYR">MYR</option>
-                        <option value="AUD">AUD</option>
+                        {CURRENCIES.map(currency => (
+                          <option key={currency.code} value={currency.code}>
+                            {currency.code}
+                          </option>
+                        ))}
                       </select>
                       <button
                         onClick={() => handleEditAccount(account.id)}
