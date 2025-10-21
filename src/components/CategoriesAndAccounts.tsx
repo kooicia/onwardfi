@@ -193,12 +193,6 @@ export default function CategoriesAndAccounts({
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setAddingAccountToCategory(category.value)}
-                  className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
-                >
-                  + Add Account
-                </button>
-                <button
                   onClick={() => startEditCategory(category)}
                   className="px-2 py-1 text-xs border border-gray-300 text-gray-600 rounded hover:bg-gray-50"
                 >
@@ -215,130 +209,135 @@ export default function CategoriesAndAccounts({
           )}
         </div>
 
-        {/* Add Account Form */}
-        {isAddingAccount && (
-          <div className="mb-3 p-3 bg-green-50 rounded border border-green-200">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
-                <input
-                  type="text"
-                  value={accountForm.name}
-                  onChange={(e) => setAccountForm({ ...accountForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="e.g., Savings Account"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                <select
-                  value={accountForm.currency}
-                  onChange={(e) => setAccountForm({ ...accountForm, currency: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
-                  {CURRENCIES.map(currency => (
-                    <option key={currency.code} value={currency.code}>
-                      {currency.code} - {currency.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleAddAccount(category.value, category.type)}
-                disabled={!accountForm.name}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-              >
-                Add Account
-              </button>
-              <button
-                onClick={cancelEdit}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 text-sm"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Accounts List */}
-        {categoryAccounts.length > 0 ? (
-          <div className="space-y-2 pl-4">
-            {categoryAccounts.map((account) => {
-              const isEditingThisAccount = editingAccount === account.id;
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pl-4">
+          {categoryAccounts.map((account) => {
+            const isEditingThisAccount = editingAccount === account.id;
 
-              return (
-                <div
-                  key={account.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200"
-                >
-                  {isEditingThisAccount ? (
-                    <div className="flex-1 flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={accountForm.name}
-                        onChange={(e) => setAccountForm({ ...accountForm, name: e.target.value })}
-                        className="flex-1 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Account name"
-                      />
-                      <select
-                        value={accountForm.currency}
-                        onChange={(e) => setAccountForm({ ...accountForm, currency: e.target.value })}
-                        className="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        {CURRENCIES.map(currency => (
-                          <option key={currency.code} value={currency.code}>
-                            {currency.code}
-                          </option>
-                        ))}
-                      </select>
+            return (
+              <div
+                key={account.id}
+                className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+              >
+                {isEditingThisAccount ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={accountForm.name}
+                      onChange={(e) => setAccountForm({ ...accountForm, name: e.target.value })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Account name"
+                    />
+                    <select
+                      value={accountForm.currency}
+                      onChange={(e) => setAccountForm({ ...accountForm, currency: e.target.value })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {CURRENCIES.map(currency => (
+                        <option key={currency.code} value={currency.code}>
+                          {currency.code}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex gap-2">
                       <button
                         onClick={() => handleEditAccount(account.id)}
-                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+                        className="flex-1 px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
                       >
                         Save
                       </button>
                       <button
                         onClick={cancelEdit}
-                        className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
+                        className="flex-1 px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
                       >
                         Cancel
                       </button>
                     </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{account.name}</span>
-                        <span className="text-sm text-gray-500 bg-gray-200 px-2 py-1 rounded">
-                          {account.currency}
-                        </span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mb-2">
+                      <div className="font-semibold text-gray-800 mb-1">{account.name}</div>
+                      <div className="inline-block text-xs font-mono text-gray-600 bg-white px-2 py-1 rounded border border-gray-300">
+                        {account.currency}
                       </div>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => startEditAccount(account)}
-                          className="px-2 py-0.5 text-xs text-gray-500 hover:text-blue-600 hover:underline"
-                        >
-                          Edit
-                        </button>
-                        <span className="text-gray-300">|</span>
-                        <button
-                          onClick={() => handleDeleteAccount(account.id)}
-                          className="px-2 py-0.5 text-xs text-gray-500 hover:text-red-600 hover:underline"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </>
-                  )}
+                    </div>
+                    <div className="flex gap-1 text-xs pt-2 border-t border-gray-200">
+                      <button
+                        onClick={() => startEditAccount(account)}
+                        className="flex-1 px-2 py-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAccount(account.id)}
+                        className="flex-1 px-2 py-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+          
+          {/* Add Account Tile */}
+          {isAddingAccount ? (
+            <div className="p-4 bg-green-50 rounded-lg border-2 border-green-200 min-h-[120px]">
+              <div className="space-y-2">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Account Name</label>
+                  <input
+                    type="text"
+                    value={accountForm.name}
+                    onChange={(e) => setAccountForm({ ...accountForm, name: e.target.value })}
+                    className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                    placeholder="e.g., Savings"
+                    autoFocus
+                  />
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-500 italic pl-4">No accounts in this category yet</p>
-        )}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Currency</label>
+                  <select
+                    value={accountForm.currency}
+                    onChange={(e) => setAccountForm({ ...accountForm, currency: e.target.value })}
+                    className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                  >
+                    {CURRENCIES.map(currency => (
+                      <option key={currency.code} value={currency.code}>
+                        {currency.code}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={() => handleAddAccount(category.value, category.type)}
+                    disabled={!accountForm.name}
+                    className="flex-1 px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+                  >
+                    Add
+                  </button>
+                  <button
+                    onClick={cancelEdit}
+                    className="flex-1 px-2 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAddingAccountToCategory(category.value)}
+              className="p-4 bg-white rounded-lg border-2 border-dashed border-gray-300 hover:border-green-500 hover:bg-green-50 transition-all flex flex-col items-center justify-center min-h-[120px] group"
+            >
+              <div className="text-3xl text-gray-300 group-hover:text-green-500 transition-colors mb-1">+</div>
+              <div className="text-sm text-gray-500 group-hover:text-green-600 font-medium">Add Account</div>
+            </button>
+          )}
+        </div>
       </div>
     );
   };

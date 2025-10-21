@@ -1,5 +1,6 @@
 import React from 'react';
-import { getAvailableCurrencies, formatCurrency } from '../utils/currencyConverter';
+import { formatCurrency } from '../utils/currencyConverter';
+import { CURRENCIES } from '../types';
 
 interface CurrencySelectorProps {
   selectedCurrency: string;
@@ -8,7 +9,7 @@ interface CurrencySelectorProps {
 }
 
 export default function CurrencySelector({ selectedCurrency, onCurrencyChange, className = '' }: CurrencySelectorProps) {
-  const currencies = getAvailableCurrencies();
+  const currencies = CURRENCIES;
 
   return (
     <div className={`flex items-center gap-2 flex-nowrap min-w-0 ${className}`} style={{flexWrap: 'nowrap'}}>

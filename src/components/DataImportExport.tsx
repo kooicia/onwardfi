@@ -554,6 +554,82 @@ export default function DataImportExport({ accounts, entries, onImportData, pref
       <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">Data Import & Export</h2>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Import Section */}
+        <div className="border rounded-lg p-4">
+          <h3 className="text-lg font-semibold mb-3">Import Data</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Import accounts and entries from JSON or CSV files.
+          </p>
+          
+          <div className="text-sm text-gray-700 mb-4">
+            <div className="font-medium">Note:</div>
+            <div>• Accounts with matching names will be mapped to existing accounts</div>
+            <div>• New accounts will be created for unmatched names</div>
+            <div>• Entries for existing dates will be replaced</div>
+            <div>• New entries will be added for new dates</div>
+            <div>• Make sure to backup current data first</div>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,.csv"
+            onChange={handleImport}
+            className="hidden"
+          />
+          <button
+            onClick={handleImportClick}
+            disabled={importStatus === 'importing'}
+            className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50"
+          >
+            {importStatus === 'importing' ? 'Importing...' : 'Import Data (JSON/CSV)'}
+          </button>
+
+          {/* Sample File Section */}
+          <div className="mt-4 p-3 bg-gray-50 rounded">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium">Sample Files:</span>
+              <div className="space-x-2">
+                <button
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                >
+                  {showPreview ? 'Hide Preview' : 'Show Preview'}
+                </button>
+                <button
+                  onClick={() => handleDownloadSample('json')}
+                  className="px-2 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+                >
+                  JSON
+                </button>
+                <button
+                  onClick={() => handleDownloadSample('csv')}
+                  className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                >
+                  CSV
+                </button>
+              </div>
+            </div>
+            
+            {showPreview && (
+              <div className="mt-3 space-y-3">
+                <div>
+                  <div className="text-xs text-gray-600 mb-1">JSON format:</div>
+                  <pre className="text-xs bg-white p-2 rounded border overflow-x-auto max-h-32">
+{JSON.stringify(generateSampleData(), null, 2)}
+                  </pre>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-600 mb-1">CSV format:</div>
+                  <pre className="text-xs bg-white p-2 rounded border overflow-x-auto max-h-32">
+{sampleCSV}
+                  </pre>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Export Section */}
         <div className="border rounded-lg p-4">
           <h3 className="text-lg font-semibold mb-3">Export Data</h3>
@@ -609,82 +685,6 @@ export default function DataImportExport({ accounts, entries, onImportData, pref
               </pre>
             )}
           </div>
-        </div>
-
-        {/* Import Section */}
-        <div className="border rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-3">Import Data</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Import accounts and entries from JSON or CSV files.
-          </p>
-          
-          <div className="text-sm text-gray-700 mb-4">
-            <div className="font-medium">Note:</div>
-            <div>• Accounts with matching names will be mapped to existing accounts</div>
-            <div>• New accounts will be created for unmatched names</div>
-            <div>• Entries for existing dates will be replaced</div>
-            <div>• New entries will be added for new dates</div>
-            <div>• Make sure to backup current data first</div>
-          </div>
-
-          {/* Sample File Section */}
-          <div className="mb-4 p-3 bg-gray-50 rounded">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium">Sample Files:</span>
-              <div className="space-x-2">
-                <button
-                  onClick={() => setShowPreview(!showPreview)}
-                  className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-                >
-                  {showPreview ? 'Hide Preview' : 'Show Preview'}
-                </button>
-                <button
-                  onClick={() => handleDownloadSample('json')}
-                  className="px-2 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
-                >
-                  JSON
-                </button>
-                <button
-                  onClick={() => handleDownloadSample('csv')}
-                  className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                >
-                  CSV
-                </button>
-              </div>
-            </div>
-            
-            {showPreview && (
-              <div className="mt-3 space-y-3">
-                <div>
-                  <div className="text-xs text-gray-600 mb-1">JSON format:</div>
-                  <pre className="text-xs bg-white p-2 rounded border overflow-x-auto max-h-32">
-{JSON.stringify(generateSampleData(), null, 2)}
-                  </pre>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-600 mb-1">CSV format:</div>
-                  <pre className="text-xs bg-white p-2 rounded border overflow-x-auto max-h-32">
-{sampleCSV}
-                  </pre>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json,.csv"
-            onChange={handleImport}
-            className="hidden"
-          />
-          <button
-            onClick={handleImportClick}
-            disabled={importStatus === 'importing'}
-            className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50"
-          >
-            {importStatus === 'importing' ? 'Importing...' : 'Import Data (JSON/CSV)'}
-          </button>
         </div>
       </div>
 
