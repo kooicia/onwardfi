@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/onwardfi/static/css/main.c3095112.css",
-    "main.js": "/onwardfi/static/js/main.64c25d7c.js",
+    "main.js": "/onwardfi/static/js/main.6a880df3.js",
     "static/js/453.66197bae.chunk.js": "/onwardfi/static/js/453.66197bae.chunk.js",
     "index.html": "/onwardfi/index.html",
     "main.c3095112.css.map": "/onwardfi/static/css/main.c3095112.css.map",
-    "main.64c25d7c.js.map": "/onwardfi/static/js/main.64c25d7c.js.map",
+    "main.6a880df3.js.map": "/onwardfi/static/js/main.6a880df3.js.map",
     "453.66197bae.chunk.js.map": "/onwardfi/static/js/453.66197bae.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.c3095112.css",
-    "static/js/main.64c25d7c.js"
+    "static/js/main.6a880df3.js"
   ]
 }
