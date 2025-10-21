@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { NetWorthEntry } from '../types';
+import { NetWorthEntry, Account } from '../types';
+import { convertCurrencySync } from '../utils/currencyConverter';
 import EmptyState from './EmptyState';
 
 interface DataManagementProps {
   entries: NetWorthEntry[];
+  accounts: Account[];
   onClearEntries: (entryIds: string[]) => void;
   onClearAllData: () => void;
   onCreateFirstEntry?: () => void;
+  preferredCurrency: string;
 }
 
-export default function DataManagement({ entries, onClearEntries, onClearAllData, onCreateFirstEntry }: DataManagementProps) {
+export default function DataManagement({ entries, accounts, onClearEntries, onClearAllData, onCreateFirstEntry, preferredCurrency }: DataManagementProps) {
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
   const [showConfirmClear, setShowConfirmClear] = useState(false);
   const [showConfirmClearAll, setShowConfirmClearAll] = useState(false);
@@ -55,8 +58,47 @@ export default function DataManagement({ entries, onClearEntries, onClearAllData
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: preferredCurrency
     }).format(amount);
+  };
+
+  // Recalculate entry totals based on current preferred currency
+  const recalculateEntryTotals = (entry: NetWorthEntry) => {
+    let totalAssets = 0;
+    let totalLiabilities = 0;
+
+    // Loop through all account values in the entry
+    Object.entries(entry.accountValues).forEach(([accountId, value]) => {
+      const account = accounts.find(acc => acc.id === accountId);
+      if (!account) return; // Skip if account no longer exists
+
+      // Convert value to preferred currency
+      let convertedValue: number;
+      
+      // Try to use stored exchange rate first
+      const rate = entry.exchangeRates?.[`${account.currency}-${preferredCurrency}`];
+      if (typeof rate === 'number' && isFinite(rate) && rate > 0) {
+        convertedValue = value * rate;
+      } else {
+        // Fall back to sync conversion with current rates
+        convertedValue = convertCurrencySync(value, account.currency, preferredCurrency);
+      }
+
+      // Add to appropriate total
+      if (account.type === 'asset') {
+        totalAssets += convertedValue;
+      } else {
+        totalLiabilities += convertedValue;
+      }
+    });
+
+    const netWorth = totalAssets - totalLiabilities;
+
+    return {
+      totalAssets,
+      totalLiabilities,
+      netWorth
+    };
   };
 
   return (
@@ -123,32 +165,35 @@ export default function DataManagement({ entries, onClearEntries, onClearAllData
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {entries.map(entry => (
-                  <tr key={entry.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedEntries.has(entry.id)}
-                        onChange={() => handleSelectEntry(entry.id)}
-                        className="rounded"
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                      {formatDate(entry.date)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-green-600">
-                      {formatCurrency(entry.totalAssets)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-red-600">
-                      {formatCurrency(entry.totalLiabilities)}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-medium">
-                      <span className={entry.netWorth >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        {formatCurrency(entry.netWorth)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {entries.map(entry => {
+                  const recalculated = recalculateEntryTotals(entry);
+                  return (
+                    <tr key={entry.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedEntries.has(entry.id)}
+                          onChange={() => handleSelectEntry(entry.id)}
+                          className="rounded"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                        {formatDate(entry.date)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-green-600">
+                        {formatCurrency(recalculated.totalAssets)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-red-600">
+                        {formatCurrency(recalculated.totalLiabilities)}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium">
+                        <span className={recalculated.netWorth >= 0 ? 'text-green-600' : 'text-red-600'}>
+                          {formatCurrency(recalculated.netWorth)}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

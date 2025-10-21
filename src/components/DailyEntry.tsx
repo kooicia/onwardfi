@@ -353,7 +353,7 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
                         categoryAccounts.forEach(account => {
                           const previousValue = getPreviousValue(account.id);
                           if (previousValue > 0) {
-                            handleAccountValueChange(account.id, previousValue.toString());
+                            copyFromPrevious(account.id);
                           }
                         });
                       }}
@@ -366,7 +366,14 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
                   <button
                     onClick={() => {
                       categoryAccounts.forEach(account => {
-                        handleAccountValueChange(account.id, '');
+                        setAccountValues(prev => ({
+                          ...prev,
+                          [account.id]: 0
+                        }));
+                        setInputValues(prev => ({
+                          ...prev,
+                          [account.id]: ''
+                        }));
                       });
                     }}
                     className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 transition-colors"

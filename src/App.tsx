@@ -571,9 +571,11 @@ function App() {
         {page === "data" && (
           <DataManagement
             entries={entries}
+            accounts={accounts}
             onClearEntries={handleClearEntries}
             onClearAllData={handleClearAllData}
             onCreateFirstEntry={() => setPage('entry')}
+            preferredCurrency={preferredCurrency}
           />
         )}
         {page === "settings" && (

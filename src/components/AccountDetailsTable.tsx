@@ -70,6 +70,27 @@ export default function AccountDetailsTable({
           return;
         }
       }
+      
+      // If editing the preferred currency column, convert back to original currency
+      if (editingCell.column === 'usd') {
+        const account = accounts.find(acc => acc.id === editingCell.accountId);
+        if (account && account.currency !== preferredCurrency) {
+          const entry = entries.find(e => e.id === editingCell.entryId);
+          // Convert from preferred currency back to original currency
+          const rate = entry?.exchangeRates?.[`${account.currency}-${preferredCurrency}`];
+          if (typeof rate === 'number' && isFinite(rate) && rate > 0) {
+            // Reverse the conversion: if original * rate = preferred, then original = preferred / rate
+            newValue = newValue / rate;
+          } else {
+            // Use sync conversion for reverse conversion
+            const forwardRate = convertCurrencySync(1, account.currency, preferredCurrency);
+            if (forwardRate > 0) {
+              newValue = newValue / forwardRate;
+            }
+          }
+        }
+      }
+      
       await onUpdateEntryValue(editingCell.entryId, editingCell.accountId, newValue);
     }
     setEditingCell(null);
