@@ -403,7 +403,7 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
                         return (
                           <div key={cat.value} className="flex items-center">
                             <div className="w-24 text-sm text-gray-700 font-medium">{cat.label}</div>
-                            <div className="flex-1 bg-gray-200 rounded-full h-5 relative mx-3">
+                            <div className="w-48 bg-gray-200 rounded-full h-5 relative mx-3">
                               <div 
                                 className="h-5 rounded-full"
                                 style={{ 
@@ -447,7 +447,7 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
                         return (
                           <div key={cat.value} className="flex items-center">
                             <div className="w-24 text-sm text-gray-700 font-medium">{cat.label}</div>
-                            <div className="flex-1 bg-gray-200 rounded-full h-5 relative mx-3">
+                            <div className="w-48 bg-gray-200 rounded-full h-5 relative mx-3">
                               <div 
                                 className="h-5 rounded-full"
                                 style={{ 
