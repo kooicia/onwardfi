@@ -594,7 +594,7 @@ export default function AccountDetailsTable({
   return (
     <div className="mb-6 sm:mb-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-        <Typography.Title level={3} className="!mb-0">Account Details by Date</Typography.Title>
+        <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide mb-0">ACCOUNT DETAILS BY DATE</h3>
         <Space>
           {!allAccountsSameCurrency && (
             <Checkbox

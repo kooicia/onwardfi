@@ -23,10 +23,14 @@ function hexToRgba(hex: string, alpha: number) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+type ChartFilter = 'all' | 'ytd' | 'last12' | 'last24' | 'year';
+
 export default function HistoryAndCharts({ entries, accounts, preferredCurrency, onUpdateEntryValue, onCreateFirstEntry }: HistoryAndChartsProps) {
   const [showOriginalCurrency, setShowOriginalCurrency] = useState(true);
   const [editingCell, setEditingCell] = useState<{ entryId: string; accountId: string; column: 'original' | 'usd' } | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+  const [chartFilter, setChartFilter] = useState<ChartFilter>('all');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   
   // Helper to recalculate assets, liabilities, and net worth for an entry
   function recalcTotals(entry: NetWorthEntry) {
@@ -60,6 +64,43 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
   // Sort entries by date for proper chart display
   const sortedEntries = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
+  // Filter entries based on selected filter
+  const getFilteredEntries = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    switch (chartFilter) {
+      case 'ytd':
+        return sortedEntries.filter(entry => {
+          const entryDate = new Date(entry.date);
+          return entryDate.getFullYear() === currentYear;
+        });
+      case 'last12':
+        const twelveMonthsAgo = new Date();
+        twelveMonthsAgo.setMonth(now.getMonth() - 12);
+        return sortedEntries.filter(entry => new Date(entry.date) >= twelveMonthsAgo);
+      case 'last24':
+        const twentyFourMonthsAgo = new Date();
+        twentyFourMonthsAgo.setMonth(now.getMonth() - 24);
+        return sortedEntries.filter(entry => new Date(entry.date) >= twentyFourMonthsAgo);
+      case 'year':
+        return sortedEntries.filter(entry => {
+          const entryDate = new Date(entry.date);
+          return entryDate.getFullYear() === selectedYear;
+        });
+      case 'all':
+      default:
+        return sortedEntries;
+    }
+  };
+
+  const filteredEntries = getFilteredEntries();
+
+  // Get available years from entries
+  const availableYears = Array.from(new Set(sortedEntries.map(entry => new Date(entry.date).getFullYear()))).sort((a, b) => a - b);
+  const minYear = availableYears.length > 0 ? availableYears[0] : new Date().getFullYear();
+  const maxYear = availableYears.length > 0 ? availableYears[availableYears.length - 1] : new Date().getFullYear();
+
   // Format data for chart (recalculate for preferred currency)
   const chartData = sortedEntries.map(entry => {
     const { assets, liabilities, netWorth } = recalcTotals(entry);
@@ -85,7 +126,7 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
     'other-liabilities': '#64748b',
   };
 
-  const chartDataByCategory = sortedEntries.map(entry => {
+  const chartDataByCategory = filteredEntries.map(entry => {
     const row: any = { date: new Date(entry.date).toLocaleDateString() };
     let assetSum = 0;
     let liabilitySum = 0;
@@ -294,35 +335,233 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
     <div className="bg-white rounded shadow p-4 sm:p-6 mt-4">
       <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">Dashboard</h2>
       
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-6 sm:mb-8">
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <div className="text-sm text-gray-600">Total Entries</div>
-          <div className="text-2xl font-bold text-blue-700">{entries.length}</div>
-        </div>
-        <div className="bg-green-50 p-4 rounded-lg">
-          <div className="text-sm text-gray-600">Latest Assets</div>
-          <div className="text-2xl font-bold text-green-700">
-            {formatCurrencyForDisplay(sortedEntries.length ? recalcTotals(sortedEntries[sortedEntries.length - 1]).assets : 0)}
+      {/* Personal Net Worth Section */}
+      {sortedEntries.length > 0 && (() => {
+        const latestEntry = sortedEntries[sortedEntries.length - 1];
+        const { assets, liabilities, netWorth } = recalcTotals(latestEntry);
+        
+        return (
+          <div className="mb-6 sm:mb-8">
+            {/* Personal Net Worth Section */}
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide mb-4">PERSONAL NET WORTH</h3>
+              <div className="text-center mb-6">
+                <div className="text-5xl font-bold text-blue-600 mb-2">
+                  {formatCurrencyForDisplay(netWorth)}
+                </div>
+                <div className="text-sm text-gray-500 font-normal">
+                  - as of {new Date(latestEntry.date).toLocaleDateString('en-CA')}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="flex items-center justify-center mb-2">
+                    <div className="w-4 h-4 bg-blue-500 mr-2 rounded-sm"></div>
+                    <span className="text-gray-700 font-medium text-sm">Total Assets</span>
+                  </div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {formatCurrencyForDisplay(assets)}
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-red-50 rounded-lg">
+                  <div className="flex items-center justify-center mb-2">
+                    <div className="w-4 h-4 bg-red-500 mr-2 rounded-sm"></div>
+                    <span className="text-gray-700 font-medium text-sm">Total Liabilities</span>
+                  </div>
+                  <div className="text-2xl font-bold text-red-600">
+                    {formatCurrencyForDisplay(liabilities)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Row - 2 Column Layout for Summary Sections */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Summary of Assets - Left Column */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide mb-4">SUMMARY OF ASSETS</h3>
+                <div className="space-y-3">
+                  {(() => {
+                    const assetCategories = [...ASSET_CATEGORIES];
+                    const categoryTotals: { [key: string]: number } = {};
+                    
+                    // Calculate totals by category
+                    accounts.filter(acc => acc.type === 'asset').forEach(acc => {
+                      const value = latestEntry.accountValues[acc.id] || 0;
+                      const rate = latestEntry.exchangeRates?.[`${acc.currency}-${preferredCurrency}`];
+                      const convertedValue = rate ? value * rate : convertCurrencySync(value, acc.currency, preferredCurrency);
+                      categoryTotals[acc.category] = (categoryTotals[acc.category] || 0) + convertedValue;
+                    });
+                    
+                    return assetCategories
+                      .filter(cat => categoryTotals[cat.value] > 0)
+                      .map(cat => {
+                        const total = categoryTotals[cat.value];
+                        const percentage = (total / assets) * 100;
+                        const color = categoryColors[cat.value] || '#8884d8';
+                        
+                        return (
+                          <div key={cat.value} className="flex items-center">
+                            <div className="w-24 text-sm text-gray-700 font-medium">{cat.label}</div>
+                            <div className="flex-1 bg-gray-200 rounded-full h-5 relative mx-3">
+                              <div 
+                                className="h-5 rounded-full"
+                                style={{ 
+                                  width: `${Math.min(100, percentage)}%`,
+                                  backgroundColor: color
+                                }}
+                              ></div>
+                            </div>
+                            <div className="text-sm font-semibold text-gray-900 ml-2">{formatCurrencyForDisplay(total)}</div>
+                            <div className="text-sm font-normal text-gray-500 ml-2">{percentage.toFixed(0)}%</div>
+                          </div>
+                        );
+                      });
+                  })()}
+                </div>
+              </div>
+
+              {/* Summary of Liabilities - Right Column */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide mb-4">SUMMARY OF LIABILITIES</h3>
+                <div className="space-y-3">
+                  {(() => {
+                    const liabilityCategories = [...LIABILITY_CATEGORIES];
+                    const categoryTotals: { [key: string]: number } = {};
+                    
+                    // Calculate totals by category
+                    accounts.filter(acc => acc.type === 'liability').forEach(acc => {
+                      const value = latestEntry.accountValues[acc.id] || 0;
+                      const rate = latestEntry.exchangeRates?.[`${acc.currency}-${preferredCurrency}`];
+                      const convertedValue = rate ? value * rate : convertCurrencySync(value, acc.currency, preferredCurrency);
+                      categoryTotals[acc.category] = (categoryTotals[acc.category] || 0) + convertedValue;
+                    });
+                    
+                    return liabilityCategories
+                      .filter(cat => categoryTotals[cat.value] > 0)
+                      .map(cat => {
+                        const total = categoryTotals[cat.value];
+                        const percentage = (total / liabilities) * 100;
+                        const color = categoryColors[cat.value] || '#8884d8';
+                        
+                        return (
+                          <div key={cat.value} className="flex items-center">
+                            <div className="w-24 text-sm text-gray-700 font-medium">{cat.label}</div>
+                            <div className="flex-1 bg-gray-200 rounded-full h-5 relative mx-3">
+                              <div 
+                                className="h-5 rounded-full"
+                                style={{ 
+                                  width: `${Math.min(100, percentage)}%`,
+                                  backgroundColor: color
+                                }}
+                              ></div>
+                            </div>
+                            <div className="text-sm font-semibold text-gray-900 ml-2">{formatCurrencyForDisplay(total)}</div>
+                            <div className="text-sm font-normal text-gray-500 ml-2">{percentage.toFixed(0)}%</div>
+                          </div>
+                        );
+                      });
+                  })()}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="bg-red-50 p-4 rounded-lg">
-          <div className="text-sm text-gray-600">Latest Liabilities</div>
-          <div className="text-2xl font-bold text-red-700">
-            {formatCurrencyForDisplay(sortedEntries.length ? recalcTotals(sortedEntries[sortedEntries.length - 1]).liabilities : 0)}
-          </div>
-        </div>
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <div className="text-sm text-gray-600">Latest Net Worth</div>
-          <div className="text-2xl font-bold text-purple-700">
-            {formatCurrencyForDisplay(sortedEntries.length ? recalcTotals(sortedEntries[sortedEntries.length - 1]).netWorth : 0)}
-          </div>
-        </div>
-      </div>
+        );
+      })()}
+      
 
       {/* Category Breakdown Chart */}
       <div className="mb-6 sm:mb-8">
-        <h3 className="text-base sm:text-lg font-semibold mb-4">Net Worth by Category</h3>
+        <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wide mb-4">NET WORTH DEVELOPMENT</h3>
+        
+        {/* Filter Controls */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setChartFilter('all')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              chartFilter === 'all'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setChartFilter('ytd')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              chartFilter === 'ytd'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            YTD
+          </button>
+          <button
+            onClick={() => setChartFilter('last12')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              chartFilter === 'last12'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Last 12 Months
+          </button>
+          <button
+            onClick={() => setChartFilter('last24')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              chartFilter === 'last24'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Last 24 Months
+          </button>
+          
+          {/* Year Selection */}
+          <div className="flex items-center gap-2 ml-4">
+            <button
+              onClick={() => {
+                setChartFilter('year');
+                setSelectedYear(prev => prev - 1);
+              }}
+              disabled={selectedYear <= minYear}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                selectedYear <= minYear
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              title="Previous Year"
+            >
+              &lt;
+            </button>
+            <button
+              onClick={() => setChartFilter('year')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                chartFilter === 'year'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {selectedYear}
+            </button>
+            <button
+              onClick={() => {
+                setChartFilter('year');
+                setSelectedYear(prev => prev + 1);
+              }}
+              disabled={selectedYear >= maxYear}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                selectedYear >= maxYear
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              title="Next Year"
+            >
+              &gt;
+            </button>
+          </div>
+        </div>
+        
         <div className="h-64 sm:h-80" style={{ marginLeft: '20px' }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartDataByCategory} margin={{ left: 20, right: 20, top: 20, bottom: 20 }}>
@@ -382,54 +621,6 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
         preferredCurrency={preferredCurrency}
         onUpdateEntryValue={onUpdateEntryValue}
       />
-
-      {/* Summary Table */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Historical Entries</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-                  Date
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-                  Total Assets
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-                  Total Liabilities
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-                  Net Worth
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {sortedEntries.map((entry) => {
-                const { assets, liabilities, netWorth } = recalcTotals(entry);
-                return (
-                  <tr key={entry.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-900 border-b">
-                      {new Date(entry.date).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-right text-green-600 font-medium border-b">
-                      {formatCurrencyForDisplay(assets)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-right text-red-600 font-medium border-b">
-                      {formatCurrencyForDisplay(liabilities)}
-                    </td>
-                    <td className={`px-4 py-3 text-sm text-right font-medium border-b ${
-                      netWorth >= 0 ? 'text-blue-600' : 'text-orange-600'
-                    }`}>
-                      {formatCurrencyForDisplay(netWorth)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 } 
