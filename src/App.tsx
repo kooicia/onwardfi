@@ -5,6 +5,7 @@ import Settings from "./components/Settings";
 import Auth from "./components/Auth";
 import FIRECalculator from "./components/FIRECalculator";
 import DailyEntry from "./components/DailyEntry";
+import PortfolioAllocation from "./components/PortfolioAllocation";
 import { Account, NetWorthEntry, AccountCategory, ASSET_CATEGORIES, LIABILITY_CATEGORIES, GoogleSheetsConnection } from "./types";
 import "./App.css";
 import LanguageSelector from "./components/LanguageSelector";
@@ -583,6 +584,16 @@ function App() {
         </button>
         <button 
           className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
+            page === "portfolio" 
+              ? "bg-blue-600 text-white shadow-md" 
+              : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
+          }`} 
+          onClick={() => setPage("portfolio")}
+        >
+          Portfolio
+        </button>
+        <button 
+          className={`px-2 sm:px-3 py-1 text-sm sm:text-base rounded transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-md whitespace-nowrap ${
             page === "data" 
               ? "bg-blue-600 text-white shadow-md" 
               : "bg-white text-blue-700 hover:bg-blue-100 hover:text-blue-800"
@@ -668,6 +679,16 @@ function App() {
         {page === "firecalculator" && (
           <FIRECalculator
             preferredCurrency={preferredCurrency}
+          />
+        )}
+        {page === "portfolio" && (
+          <PortfolioAllocation
+            accounts={accounts}
+            entries={entries}
+            preferredCurrency={preferredCurrency}
+            assetCategories={assetCategories}
+            liabilityCategories={liabilityCategories}
+            onImportData={handleImportData}
           />
         )}
       </main>
