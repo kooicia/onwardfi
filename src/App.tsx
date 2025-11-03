@@ -6,6 +6,7 @@ import Auth from "./components/Auth";
 import FIRECalculator from "./components/FIRECalculator";
 import DailyEntry from "./components/DailyEntry";
 import PortfolioAllocation from "./components/PortfolioAllocation";
+import OnboardingWizard from "./components/OnboardingWizard";
 import { Account, NetWorthEntry, AccountCategory, ASSET_CATEGORIES, LIABILITY_CATEGORIES, GoogleSheetsConnection } from "./types";
 import "./App.css";
 import LanguageSelector from "./components/LanguageSelector";
@@ -34,6 +35,8 @@ function App() {
     isConnected: false,
     autoSync: false,
   });
+  const [isOnboardingActive, setIsOnboardingActive] = useState(false);
+  const [useSingleCurrency, setUseSingleCurrency] = useState<boolean>(true);
   const { t } = useTranslation();
 
   // Function to create predefined accounts for new users
@@ -120,6 +123,13 @@ function App() {
     }
   }, [googleSheetsConnection, currentUserId]);
 
+  // Save useSingleCurrency to localStorage whenever it changes
+  useEffect(() => {
+    if (currentUserId) {
+      localStorage.setItem(`fireUseSingleCurrency_${currentUserId}`, useSingleCurrency.toString());
+    }
+  }, [useSingleCurrency, currentUserId]);
+
   // Check for existing login on app start
   useEffect(() => {
     const savedUser = localStorage.getItem('fireUser');
@@ -136,6 +146,8 @@ function App() {
       const savedAssetCategories = localStorage.getItem(`fireAssetCategories_${userData.id}`);
       const savedLiabilityCategories = localStorage.getItem(`fireLiabilityCategories_${userData.id}`);
       const savedGoogleSheetsConnection = localStorage.getItem(`fireGoogleSheetsConnection_${userData.id}`);
+      const savedSingleCurrency = localStorage.getItem(`fireUseSingleCurrency_${userData.id}`);
+      const onboardingCompleted = localStorage.getItem(`onboardingCompleted_${userData.id}`);
       
       if (savedAccounts) {
         setAccounts(JSON.parse(savedAccounts));
@@ -154,6 +166,20 @@ function App() {
       }
       if (savedGoogleSheetsConnection) {
         setGoogleSheetsConnection(JSON.parse(savedGoogleSheetsConnection));
+      }
+      if (savedSingleCurrency !== null) {
+        setUseSingleCurrency(savedSingleCurrency === 'true');
+      }
+      
+      // Check if onboarding should be triggered (new user or empty accounts)
+      const parsedAccounts = savedAccounts ? JSON.parse(savedAccounts) : [];
+      const parsedEntries = savedEntries ? JSON.parse(savedEntries) : [];
+      const isNewUser = !savedAccounts && !savedEntries;
+      const hasEmptyAccounts = parsedAccounts.length === 0;
+      
+      if ((isNewUser || hasEmptyAccounts) && !onboardingCompleted) {
+        // Auto-launch onboarding for new users
+        setIsOnboardingActive(true);
       }
     }
   }, []);
@@ -252,6 +278,30 @@ function App() {
         setGoogleSheetsConnection(JSON.parse(savedGoogleSheetsConnection));
       } else {
         setGoogleSheetsConnection({ isConnected: false, autoSync: false });
+      }
+
+      // Load useSingleCurrency preference
+      const savedSingleCurrency = localStorage.getItem(`fireUseSingleCurrency_${userId}`);
+      if (savedSingleCurrency !== null) {
+        setUseSingleCurrency(savedSingleCurrency === 'true');
+      }
+
+      // Check if onboarding should be triggered (new user or empty accounts)
+      let parsedAccounts: Account[] = [];
+      if (savedAccounts) {
+        parsedAccounts = JSON.parse(savedAccounts);
+      } else if (!savedAccounts) {
+        // New user with predefined accounts
+        parsedAccounts = createPredefinedAccounts();
+      }
+      const parsedEntries = savedEntries ? JSON.parse(savedEntries) : [];
+      const onboardingCompleted = localStorage.getItem(`onboardingCompleted_${userId}`);
+      const isNewUser = !savedAccounts && !savedEntries;
+      const hasEmptyAccounts = parsedAccounts.length === 0;
+      
+      if ((isNewUser || hasEmptyAccounts) && !onboardingCompleted) {
+        // Auto-launch onboarding for new users
+        setIsOnboardingActive(true);
       }
     } catch (error) {
       setAuthError('Login failed. Please try again.');
@@ -477,6 +527,58 @@ function App() {
     setGoogleSheetsConnection(connection);
   }, []);
 
+  // Handler for onboarding completion
+  const handleOnboardingComplete = useCallback((data: {
+    preferredCurrency: string;
+    useSingleCurrency: boolean;
+    accounts: Account[];
+    firstEntry?: NetWorthEntry;
+  }) => {
+    // Update currency preferences
+    if (data.preferredCurrency) {
+      setPreferredCurrency(data.preferredCurrency);
+    }
+    setUseSingleCurrency(data.useSingleCurrency);
+    
+    // Update accounts (with currency set based on single/multi mode)
+    if (data.accounts.length > 0) {
+      const updatedAccounts = data.accounts.map(account => ({
+        ...account,
+        currency: data.useSingleCurrency ? data.preferredCurrency : (account.currency || data.preferredCurrency)
+      }));
+      setAccounts(updatedAccounts);
+    }
+    
+    // Create first entry if provided
+    if (data.firstEntry) {
+      setEntries([data.firstEntry]);
+    }
+    
+    // Close onboarding
+    setIsOnboardingActive(false);
+    
+    // Navigate to Dashboard
+    setPage('history');
+  }, []);
+
+  // Handler for onboarding skip
+  const handleOnboardingSkip = useCallback(() => {
+    setIsOnboardingActive(false);
+    setPage('history');
+  }, []);
+
+  // Handler to restart onboarding
+  const handleRestartOnboarding = useCallback(() => {
+    if (currentUserId) {
+      // Clear onboarding completion flag
+      localStorage.removeItem(`onboardingCompleted_${currentUserId}`);
+      localStorage.removeItem(`onboardingCompletedDate_${currentUserId}`);
+      localStorage.removeItem(`onboardingStep_${currentUserId}`);
+      // Start onboarding
+      setIsOnboardingActive(true);
+    }
+  }, [currentUserId]);
+
   // Auto-populate missing exchange rates for all entries on first load or when accounts/currency change
   useEffect(() => {
     async function fillMissingExchangeRates() {
@@ -545,6 +647,24 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Onboarding Wizard */}
+      {isOnboardingActive && isLoggedIn && (
+        <OnboardingWizard
+          userId={currentUserId}
+          accounts={accounts}
+          entries={entries}
+          preferredCurrency={preferredCurrency}
+          useSingleCurrency={useSingleCurrency}
+          assetCategories={assetCategories}
+          liabilityCategories={liabilityCategories}
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+          onUpdateAccounts={setAccounts}
+          onUpdateCurrency={setPreferredCurrency}
+          onUpdateSingleCurrency={setUseSingleCurrency}
+        />
+      )}
+
       <header className="bg-white shadow p-1">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
           <div className="font-bold text-lg sm:text-xl text-blue-700">{t('appName')}</div>
@@ -645,6 +765,7 @@ function App() {
             preferredCurrency={preferredCurrency}
             onUpdateEntryValue={handleUpdateEntryValue}
             onCreateFirstEntry={() => setPage('entry')}
+            onStartOnboarding={handleRestartOnboarding}
             assetCategories={assetCategories}
             liabilityCategories={liabilityCategories}
           />
@@ -674,6 +795,7 @@ function App() {
             googleSheetsConnection={googleSheetsConnection}
             onGoogleSheetsConnectionChange={handleGoogleSheetsConnectionChange}
             initialTab={settingsInitialTab}
+            onRestartOnboarding={handleRestartOnboarding}
           />
         )}
         {page === "firecalculator" && (

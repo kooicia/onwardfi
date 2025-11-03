@@ -11,6 +11,7 @@ interface HistoryAndChartsProps {
   preferredCurrency: string;
   onUpdateEntryValue: (entryId: string, accountId: string, newValue: number) => Promise<void>;
   onCreateFirstEntry?: () => void;
+  onStartOnboarding?: () => void;
   assetCategories?: AccountCategory[];
   liabilityCategories?: AccountCategory[];
 }
@@ -27,7 +28,7 @@ function hexToRgba(hex: string, alpha: number) {
 
 type ChartFilter = 'all' | 'ytd' | 'last12' | 'last24' | 'year';
 
-export default function HistoryAndCharts({ entries, accounts, preferredCurrency, onUpdateEntryValue, onCreateFirstEntry, assetCategories = ASSET_CATEGORIES, liabilityCategories = LIABILITY_CATEGORIES }: HistoryAndChartsProps) {
+export default function HistoryAndCharts({ entries, accounts, preferredCurrency, onUpdateEntryValue, onCreateFirstEntry, onStartOnboarding, assetCategories = ASSET_CATEGORIES, liabilityCategories = LIABILITY_CATEGORIES }: HistoryAndChartsProps) {
   const [showOriginalCurrency, setShowOriginalCurrency] = useState(true);
   const [editingCell, setEditingCell] = useState<{ entryId: string; accountId: string; column: 'original' | 'usd' } | null>(null);
   const [editValue, setEditValue] = useState<string>('');
@@ -309,28 +310,74 @@ export default function HistoryAndCharts({ entries, accounts, preferredCurrency,
   );
 
   if (entries.length === 0) {
-    return (
-      <div className="bg-white rounded shadow p-6 mt-4">
-        <h2 className="text-xl font-bold mb-6">Dashboard</h2>
-        <EmptyState
-          variant="entries"
-          title="No Net Worth Data Yet"
-          description="Start tracking your financial journey by creating your first daily entry. Monitor your assets, liabilities, and net worth over time to see your progress toward financial independence."
-          action={{
-            label: "Create First Entry",
-            onClick: onCreateFirstEntry || (() => {}),
-            variant: "primary"
-          }}
-          showSteps={true}
-          steps={[
-            "Make sure you have accounts set up first",
-            "Enter current values for all your accounts",
-            "Save your first daily entry",
-            "Come back regularly to track changes over time"
-          ]}
-        />
-      </div>
-    );
+    // Check if user has actually set up their accounts
+    // A user is considered to have set up accounts if:
+    // 1. They have accounts that aren't predefined (don't start with 'predef-')
+    // 2. OR they have accounts with modified names/currencies (indicates customization)
+    const hasNonPredefinedAccounts = accounts.some(acc => !acc.id.startsWith('predef-'));
+    const hasModifiedAccounts = accounts.some(acc => {
+      // Check if predefined accounts have been customized
+      if (acc.id.startsWith('predef-')) {
+        const defaultNames = ['Emergency Fund', 'Checking Account', 'Stock Portfolio', 
+                              'Retirement Account (401k/IRA)', 'Primary Residence Mortgage', 'Credit Card'];
+        const defaultCurrency = 'USD';
+        // If name or currency changed, it's been customized
+        return !defaultNames.includes(acc.name) || acc.currency !== defaultCurrency;
+      }
+      return false;
+    });
+    
+    const accountsAreSetUp = hasNonPredefinedAccounts || hasModifiedAccounts;
+    
+    if (accountsAreSetUp && accounts.length > 0) {
+      // Accounts are set up but no entries yet - prompt to add values
+      return (
+        <div className="bg-white rounded shadow p-6 mt-4">
+          <h2 className="text-xl font-bold mb-6">Dashboard</h2>
+          <EmptyState
+            variant="entries"
+            title="No Net Worth Data Yet"
+            description="Your accounts are set up! Enter the current values for your accounts to create your first net worth entry. Track your financial progress over time."
+            action={{
+              label: "Add Current Values",
+              onClick: onCreateFirstEntry || (() => {}),
+              variant: "primary"
+            }}
+            showSteps={true}
+            steps={[
+              "Enter current values for all your accounts",
+              "Save your first daily entry",
+              "Come back regularly to track changes over time",
+              "Watch your net worth grow on the dashboard"
+            ]}
+          />
+        </div>
+      );
+    } else {
+      // Only default predefined accounts or no accounts - prompt to start setup wizard
+      return (
+        <div className="bg-white rounded shadow p-6 mt-4">
+          <h2 className="text-xl font-bold mb-6">Dashboard</h2>
+          <EmptyState
+            variant="entries"
+            title="No Net Worth Data Yet"
+            description="Start tracking your financial journey by setting up your accounts and creating your first daily entry. Monitor your assets, liabilities, and net worth over time to see your progress toward financial independence."
+            action={{
+              label: "Start Setup Wizard",
+              onClick: onStartOnboarding || (onCreateFirstEntry || (() => {})),
+              variant: "primary"
+            }}
+            showSteps={true}
+            steps={[
+              "Set up your currency preferences",
+              "Add and customize your accounts",
+              "Enter current values for all your accounts",
+              "Start tracking your net worth over time"
+            ]}
+          />
+        </div>
+      );
+    }
   }
 
   return (
