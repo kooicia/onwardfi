@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Account, AccountCategory, CURRENCIES } from '../types';
+import { Account, AccountCategory, CURRENCIES, NetWorthEntry } from '../types';
 import EmptyState from './EmptyState';
 
 interface AccountManagementProps {
@@ -7,9 +7,10 @@ interface AccountManagementProps {
   onAccountsChange: (accounts: Account[]) => void;
   assetCategories: AccountCategory[];
   liabilityCategories: AccountCategory[];
+  entries?: NetWorthEntry[];
 }
 
-export default function AccountManagement({ accounts, onAccountsChange, assetCategories, liabilityCategories }: AccountManagementProps) {
+export default function AccountManagement({ accounts, onAccountsChange, assetCategories, liabilityCategories, entries = [] }: AccountManagementProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -71,9 +72,42 @@ export default function AccountManagement({ accounts, onAccountsChange, assetCat
   };
 
   const handleDeleteAccount = (accountId: string) => {
-    if (window.confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
-      onAccountsChange(accounts.filter(acc => acc.id !== accountId));
+    const account = accounts.find(acc => acc.id === accountId);
+    if (!account) return;
+
+    // Check if account has any data in entries
+    const entriesWithData = entries.filter(entry => {
+      const value = entry.accountValues[accountId];
+      return value !== undefined && value !== null && value !== 0;
+    });
+
+    if (entriesWithData.length > 0) {
+      // Show detailed warning about existing data
+      const dataPointCount = entriesWithData.length;
+      const dates = entriesWithData
+        .map(e => new Date(e.date).toLocaleDateString())
+        .slice(0, 5)
+        .join(', ');
+      const moreDates = dataPointCount > 5 ? ` and ${dataPointCount - 5} more` : '';
+      
+      const warningMessage = `⚠️ Warning: This account has ${dataPointCount} data point${dataPointCount !== 1 ? 's' : ''} with values.\n\n` +
+        `Dates with data: ${dates}${moreDates}\n\n` +
+        `Deleting this account will permanently remove all ${dataPointCount} data point${dataPointCount !== 1 ? 's' : ''} associated with it.\n\n` +
+        `Are you absolutely sure you want to delete "${account.name}"?\n\n` +
+        `This action cannot be undone.`;
+
+      if (!window.confirm(warningMessage)) {
+        return; // User cancelled
+      }
+    } else {
+      // No data, simple confirmation
+      if (!window.confirm(`Are you sure you want to delete "${account.name}"? This action cannot be undone.`)) {
+        return; // User cancelled
+      }
     }
+
+    // Proceed with deletion
+    onAccountsChange(accounts.filter(acc => acc.id !== accountId));
   };
 
   const handleDeleteAllPredefinedAccounts = () => {

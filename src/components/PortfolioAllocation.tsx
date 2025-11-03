@@ -303,6 +303,184 @@ const PortfolioAllocation: React.FC<PortfolioAllocationProps> = ({
       .sort((a, b) => b.total - a.total);
   }, [currentEntry, accounts, assetCategories, preferredCurrency]);
 
+  // Calculate trend data for accounts using last 12 entries
+  const accountTrendData = useMemo(() => {
+    if (!entries.length) return new Map<string, number[]>();
+    
+    const trendMap = new Map<string, number[]>();
+    
+    // Get last 12 entries, sorted by date
+    const sortedEntries = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const recentEntries = sortedEntries.slice(-12); // Take last 12 entries
+    
+    if (recentEntries.length === 0) return trendMap;
+    
+    // Get all accounts that might have data (not just filtered by portfolioTab)
+    // This ensures we capture data for accounts even if they're shown in different tabs
+    const allAccountIds = new Set<string>();
+    recentEntries.forEach(entry => {
+      Object.keys(entry.accountValues).forEach(accountId => {
+        allAccountIds.add(accountId);
+      });
+    });
+    
+    // Initialize trend map for all accounts that have data
+    allAccountIds.forEach(accountId => {
+      trendMap.set(accountId, []);
+    });
+    
+    // Calculate account values for each entry
+    recentEntries.forEach(entry => {
+      allAccountIds.forEach(accountId => {
+        const account = accounts.find(acc => acc.id === accountId);
+        if (!account) return;
+        
+        const value = entry.accountValues[accountId] || 0;
+        
+        // Convert to preferred currency
+        let convertedValue = value;
+        if (account.currency !== preferredCurrency && entry.exchangeRates) {
+          const pair = `${account.currency}-${preferredCurrency}`;
+          const rate = entry.exchangeRates[pair];
+          if (rate && isFinite(rate) && rate > 0) {
+            convertedValue = value * rate;
+          }
+        }
+        
+        const trendArray = trendMap.get(accountId) || [];
+        trendArray.push(convertedValue);
+      });
+    });
+    
+    return trendMap;
+  }, [entries, accounts, preferredCurrency]);
+
+  // Calculate trend data for categories using last 12 entries
+  const categoryTrendData = useMemo(() => {
+    if (!entries.length) return new Map<string, number[]>();
+    
+    const trendMap = new Map<string, number[]>();
+    
+    // Get last 12 entries, sorted by date
+    const sortedEntries = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const recentEntries = sortedEntries.slice(-12); // Take last 12 entries
+    
+    if (recentEntries.length === 0) return trendMap;
+    
+    // Initialize trend map for all categories (using category values)
+    const allCategories = new Set<string>();
+    accounts.forEach(acc => {
+      if ((portfolioTab === 'assets' && acc.type === 'asset') || 
+          (portfolioTab === 'liabilities' && acc.type === 'liability')) {
+        allCategories.add(acc.category);
+      }
+    });
+    
+    allCategories.forEach(cat => {
+      trendMap.set(cat, []);
+    });
+    
+    // Calculate category totals for each entry
+    recentEntries.forEach(entry => {
+      const categoryTotals = new Map<string, number>();
+      
+      Object.entries(entry.accountValues).forEach(([accountId, value]) => {
+        const account = accounts.find(acc => acc.id === accountId);
+        if (!account) return;
+        
+        // Filter by portfolio tab
+        if ((portfolioTab === 'assets' && account.type !== 'asset') ||
+            (portfolioTab === 'liabilities' && account.type !== 'liability')) {
+          return;
+        }
+        
+        // Convert to preferred currency
+        let convertedValue = value;
+        if (account.currency !== preferredCurrency && entry.exchangeRates) {
+          const pair = `${account.currency}-${preferredCurrency}`;
+          const rate = entry.exchangeRates[pair];
+          if (rate && isFinite(rate) && rate > 0) {
+            convertedValue = value * rate;
+          }
+        }
+        
+        const category = account.category;
+        categoryTotals.set(category, (categoryTotals.get(category) || 0) + convertedValue);
+      });
+      
+      // Add values to trend arrays (ensure all categories have a value for this entry)
+      allCategories.forEach(cat => {
+        const total = categoryTotals.get(cat) || 0;
+        const trendArray = trendMap.get(cat) || [];
+        trendArray.push(total);
+      });
+    });
+    
+    return trendMap;
+  }, [entries, accounts, preferredCurrency, portfolioTab]);
+
+  // Sparkline component
+  const Sparkline: React.FC<{ values: number[]; color: string }> = ({ values, color }) => {
+    if (!values || values.length === 0) {
+      return <div className="w-16 h-8 flex items-center justify-center text-gray-400 text-xs">No data</div>;
+    }
+    
+    // Check if all values are zero or if there's no meaningful variation
+    const hasNonZeroValues = values.some(v => v !== 0);
+    if (!hasNonZeroValues) {
+      // Show a flat line for zero values
+      const width = 64;
+      const height = 32;
+      const padding = 2;
+      const y = height / 2; // Middle line for zero
+      const points = `${padding},${y} ${width - padding},${y}`;
+      
+      return (
+        <div className="w-16 h-8 flex items-center">
+          <svg width={width} height={height} className="overflow-visible">
+            <polyline
+              points={points}
+              fill="none"
+              stroke={color}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeOpacity="0.5"
+            />
+          </svg>
+        </div>
+      );
+    }
+    
+    // Normalize values to fit in 64x32px area
+    const width = 64;
+    const height = 32;
+    const padding = 2;
+    const maxValue = Math.max(...values);
+    const minValue = Math.min(...values);
+    const range = maxValue - minValue || 1;
+    
+    const points = values.map((value, index) => {
+      const x = padding + (index / (values.length - 1 || 1)) * (width - 2 * padding);
+      const y = height - padding - ((value - minValue) / range) * (height - 2 * padding);
+      return `${x},${y}`;
+    }).join(' ');
+    
+    return (
+      <div className="w-16 h-8 flex items-center">
+        <svg width={width} height={height} className="overflow-visible">
+          <polyline
+            points={points}
+            fill="none"
+            stroke={color}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
+    );
+  };
+
   // Calculate liability category breakdown
   const liabilityCategoryBreakdown = useMemo((): CategoryBreakdown[] => {
     if (!currentEntry) return [];
@@ -665,12 +843,23 @@ const PortfolioAllocation: React.FC<PortfolioAllocationProps> = ({
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm text-gray-500">
-                    {formatCurrencyForDisplay(category.total)}
+                <div className="flex items-center gap-4">
+                  <div className="flex-shrink-0">
+                    {(() => {
+                      // Find the category value from the label
+                      const categoryValue = (portfolioTab === 'assets' ? assetCategories : liabilityCategories)
+                        .find(cat => cat.label === category.category)?.value || '';
+                      const trendValues = categoryTrendData.get(categoryValue) || [];
+                      return <Sparkline values={trendValues} color={category.color || '#3b82f6'} />;
+                    })()}
                   </div>
-                  <div className="text-sm font-medium text-gray-900">
-                    {category.percentage.toFixed(1)}% of total {portfolioTab === 'assets' ? 'assets' : 'liabilities'}
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">
+                      {formatCurrencyForDisplay(category.total)}
+                    </div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {category.percentage.toFixed(1)}% of total {portfolioTab === 'assets' ? 'assets' : 'liabilities'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -678,6 +867,10 @@ const PortfolioAllocation: React.FC<PortfolioAllocationProps> = ({
                 {category.accounts.map((account, accIndex) => {
                   const sourceData = portfolioTab === 'assets' ? allocationData : liabilityAllocationData;
                   const accountData = sourceData.find(item => item.name === account.name);
+                  const accountObject = accounts.find(acc => acc.name === account.name);
+                  const accountTrendValues = accountObject ? (accountTrendData.get(accountObject.id) || []) : [];
+                  const accountColor = accountData?.color || category.color || '#3b82f6';
+                  
                   return (
                     <div key={accIndex} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded">
                       <div className="flex items-center gap-2">
@@ -690,12 +883,17 @@ const PortfolioAllocation: React.FC<PortfolioAllocationProps> = ({
                           {accountData?.type || 'unknown'}
                         </span>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm text-gray-500">
-                          {formatCurrencyForDisplay(account.value)}
+                      <div className="flex items-center gap-4">
+                        <div className="flex-shrink-0">
+                          <Sparkline values={accountTrendValues} color={accountColor} />
                         </div>
-                        <div className="text-xs text-gray-400">
-                          {account.percentage.toFixed(1)}% of category
+                        <div className="text-right">
+                          <div className="text-sm text-gray-500">
+                            {formatCurrencyForDisplay(account.value)}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {account.percentage.toFixed(1)}% of category
+                          </div>
                         </div>
                       </div>
                     </div>

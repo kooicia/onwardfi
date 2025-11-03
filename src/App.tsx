@@ -801,6 +801,9 @@ function App() {
         {page === "firecalculator" && (
           <FIRECalculator
             preferredCurrency={preferredCurrency}
+            entries={entries}
+            accounts={accounts}
+            currentUserId={currentUserId}
           />
         )}
         {page === "portfolio" && (

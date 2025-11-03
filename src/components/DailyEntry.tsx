@@ -19,6 +19,9 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
   const [editingEntry, setEditingEntry] = useState<NetWorthEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [convertedValues, setConvertedValues] = useState<{ [accountId: string]: string }>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [saveMessage, setSaveMessage] = useState('');
 
   // Helper function to get category label
   const getCategoryLabel = (categoryValue: string, type: 'asset' | 'liability') => {
@@ -41,6 +44,10 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
 
   // Initialize form with existing data or empty values
   React.useEffect(() => {
+    // Clear save status when date changes
+    setSaveStatus('idle');
+    setSaveMessage('');
+    
     if (existingEntry) {
       // Create a mapping that includes both existing and missing accounts
       const initialValues: { [accountId: string]: number } = {};
@@ -159,76 +166,121 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
   };
 
   const handleSave = async () => {
-    // Fetch exchange rates for all currency pairs needed for this entry
-    const exchangeRates: { [currencyPair: string]: number } = {};
-    const uniqueCurrencies = Array.from(new Set(accounts.map(acc => acc.currency)));
-    
-    // Only fetch rates if we have multiple currencies
-    if (uniqueCurrencies.length > 1) {
-      try {
-        // Fetch rates for each currency pair needed for conversion to preferred currency
-        for (const currency of uniqueCurrencies) {
-          if (currency !== preferredCurrency) {
-            const rate = await getExchangeRate(currency, preferredCurrency, selectedDate);
-            exchangeRates[`${currency}-${preferredCurrency}`] = rate;
-            console.log(`[DEBUG] Fetched rate for ${currency}-${preferredCurrency} on ${selectedDate}:`, rate);
+    setIsSaving(true);
+    setSaveStatus('idle');
+    setSaveMessage('');
+
+    // Record start time to ensure minimum loading duration
+    const startTime = Date.now();
+    const minimumLoadingDuration = 800; // Minimum 800ms for visual feedback
+
+    try {
+      // Fetch exchange rates for all currency pairs needed for this entry
+      const exchangeRates: { [currencyPair: string]: number } = {};
+      const uniqueCurrencies = Array.from(new Set(accounts.map(acc => acc.currency)));
+      
+      // Only fetch rates if we have multiple currencies
+      if (uniqueCurrencies.length > 1) {
+        try {
+          // Fetch rates for each currency pair needed for conversion to preferred currency
+          for (const currency of uniqueCurrencies) {
+            if (currency !== preferredCurrency) {
+              const rate = await getExchangeRate(currency, preferredCurrency, selectedDate);
+              exchangeRates[`${currency}-${preferredCurrency}`] = rate;
+              console.log(`[DEBUG] Fetched rate for ${currency}-${preferredCurrency} on ${selectedDate}:`, rate);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching exchange rates:', error);
+          // Continue with save even if rate fetching fails
+        }
+      }
+      console.log('[DEBUG] All exchangeRates for entry:', exchangeRates);
+
+      // Calculate totals using real-time rates
+      let totalAssets = 0;
+      let totalLiabilities = 0;
+
+      for (const account of accounts) {
+        const value = accountValues[account.id] || 0;
+        if (account.currency === preferredCurrency) {
+          if (account.type === 'asset') {
+            totalAssets += value;
+          } else {
+            totalLiabilities += value;
+          }
+        } else {
+          const rate = exchangeRates[`${account.currency}-${preferredCurrency}`];
+          const convertedValue = rate ? value * rate : value; // Fallback to original value if rate not available
+          console.log(`[DEBUG] Account ${account.name} (${account.currency}): value=${value}, rate=${rate}, convertedValue=${convertedValue}`);
+          if (account.type === 'asset') {
+            totalAssets += convertedValue;
+          } else {
+            totalLiabilities += convertedValue;
           }
         }
-      } catch (error) {
-        console.error('Error fetching exchange rates:', error);
-        // Continue with save even if rate fetching fails
       }
-    }
-    console.log('[DEBUG] All exchangeRates for entry:', exchangeRates);
 
-    // Calculate totals using real-time rates
-    let totalAssets = 0;
-    let totalLiabilities = 0;
+      const netWorth = totalAssets - totalLiabilities;
 
-    for (const account of accounts) {
-      const value = accountValues[account.id] || 0;
-      if (account.currency === preferredCurrency) {
-        if (account.type === 'asset') {
-          totalAssets += value;
-        } else {
-          totalLiabilities += value;
-        }
+      const newEntry: NetWorthEntry = {
+        id: editingEntry?.id || Date.now().toString(),
+        date: selectedDate,
+        accountValues: { ...accountValues },
+        totalAssets,
+        totalLiabilities,
+        netWorth,
+        exchangeRates: Object.keys(exchangeRates).length > 0 ? exchangeRates : undefined
+      };
+
+      let updatedEntries;
+      if (editingEntry) {
+        // Update existing entry
+        updatedEntries = entries.map(entry => 
+          entry.id === editingEntry.id ? newEntry : entry
+        );
       } else {
-        const rate = exchangeRates[`${account.currency}-${preferredCurrency}`];
-        const convertedValue = rate ? value * rate : value; // Fallback to original value if rate not available
-        console.log(`[DEBUG] Account ${account.name} (${account.currency}): value=${value}, rate=${rate}, convertedValue=${convertedValue}`);
-        if (account.type === 'asset') {
-          totalAssets += convertedValue;
-        } else {
-          totalLiabilities += convertedValue;
-        }
+        // Add new entry
+        updatedEntries = [...entries, newEntry];
       }
+
+      onEntriesChange(updatedEntries);
+      
+      // Ensure minimum loading duration
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minimumLoadingDuration - elapsedTime);
+      
+      await new Promise(resolve => setTimeout(resolve, remainingTime));
+      
+      // Show success message
+      setSaveStatus('success');
+      setSaveMessage(editingEntry ? 'Entry updated successfully!' : 'Entry saved successfully!');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSaveStatus('idle');
+        setSaveMessage('');
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Error saving entry:', error);
+      
+      // Ensure minimum loading duration even on error
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, minimumLoadingDuration - elapsedTime);
+      await new Promise(resolve => setTimeout(resolve, remainingTime));
+      
+      setSaveStatus('error');
+      setSaveMessage('Failed to save entry. Please try again.');
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setSaveStatus('idle');
+        setSaveMessage('');
+      }, 5000);
+    } finally {
+      setIsSaving(false);
     }
-
-    const netWorth = totalAssets - totalLiabilities;
-
-    const newEntry: NetWorthEntry = {
-      id: editingEntry?.id || Date.now().toString(),
-      date: selectedDate,
-      accountValues: { ...accountValues },
-      totalAssets,
-      totalLiabilities,
-      netWorth,
-      exchangeRates: Object.keys(exchangeRates).length > 0 ? exchangeRates : undefined
-    };
-
-    let updatedEntries;
-    if (editingEntry) {
-      // Update existing entry
-      updatedEntries = entries.map(entry => 
-        entry.id === editingEntry.id ? newEntry : entry
-      );
-    } else {
-      // Add new entry
-      updatedEntries = [...entries, newEntry];
-    }
-
-    onEntriesChange(updatedEntries);
   };
 
   const handleDelete = () => {
@@ -237,9 +289,29 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
       `Are you sure you want to delete the entry for ${new Date(editingEntry.date).toLocaleDateString()}?\n\nThis action cannot be undone.`
     );
     if (confirmed) {
-      const updatedEntries = entries.filter(entry => entry.id !== editingEntry.id);
-      onEntriesChange(updatedEntries);
-      setEditingEntry(null);
+      try {
+        const updatedEntries = entries.filter(entry => entry.id !== editingEntry.id);
+        onEntriesChange(updatedEntries);
+        setEditingEntry(null);
+        
+        // Show success message
+        setSaveStatus('success');
+        setSaveMessage('Entry deleted successfully!');
+        
+        setTimeout(() => {
+          setSaveStatus('idle');
+          setSaveMessage('');
+        }, 3000);
+      } catch (error) {
+        console.error('Error deleting entry:', error);
+        setSaveStatus('error');
+        setSaveMessage('Failed to delete entry. Please try again.');
+        
+        setTimeout(() => {
+          setSaveStatus('idle');
+          setSaveMessage('');
+        }, 5000);
+      }
     }
   };
 
@@ -518,12 +590,65 @@ export default function DailyEntry({ accounts, entries, onEntriesChange, preferr
             </div>
           </div>
 
+          {/* Save Status Message */}
+          {saveStatus !== 'idle' && saveMessage && (
+            <div className={`mt-4 p-4 rounded-lg flex items-center gap-3 ${
+              saveStatus === 'success' 
+                ? 'bg-green-50 border border-green-200' 
+                : 'bg-red-50 border border-red-200'
+            }`}>
+              {saveStatus === 'success' ? (
+                <svg className="w-6 h-6 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+              <span className={`font-medium ${
+                saveStatus === 'success' ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {saveMessage}
+              </span>
+            </div>
+          )}
+
           <div className="flex gap-3 mt-6">
             <button
               onClick={handleSave}
-              className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              disabled={isSaving}
+              className={`px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-all duration-200 flex items-center gap-2 ${
+                isSaving ? 'opacity-75 cursor-not-allowed' : ''
+              }`}
             >
-              {editingEntry ? 'Update Entry' : 'Save Entry'}
+              {isSaving ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  {editingEntry ? (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      Update Entry
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Save Entry
+                    </>
+                  )}
+                </>
+              )}
             </button>
           </div>
         </>

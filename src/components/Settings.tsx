@@ -151,6 +151,7 @@ export default function Settings({
             assetCategories={assetCategories}
             liabilityCategories={liabilityCategories}
             onCategoriesChange={onCategoriesChange}
+            entries={entries}
           />
         </>
       )}
